@@ -115,7 +115,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
       });
 
       // Download and extract the file
-      final result = await DownloadHelper.downloadAndExtract7z(
+      final result = await DownloadHelper.downloadAndExtractZip(
         fileUrl,
         'skin_pack_${DateTime.now().millisecondsSinceEpoch}.zip', // Gunakan timestamp untuk nama unik
       );
@@ -317,7 +317,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
                               title: Text(entry.key),
                               subtitle: Text(entry.value.toString()),
                             );
-                          }).toList(),
+                          }),
                         ],
                       ),
                     ),

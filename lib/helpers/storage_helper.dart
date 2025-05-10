@@ -35,7 +35,7 @@ class StorageHelper {
         print('Tidak dapat menemukan external storage directory');
       }
       
-      final testFile = File('${appDir}/test_write.txt');
+      final testFile = File('$appDir/test_write.txt');
       await testFile.writeAsString('Test akses tulis: ${DateTime.now()}');
       final content = await testFile.readAsString();
       return 'Berhasil menulis dan membaca file di penyimpanan internal!\nIsi: $content';
