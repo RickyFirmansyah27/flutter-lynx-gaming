@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lynxgaming/constant/theme.dart';
 
-import 'internal_access_screen.dart';
+import 'check_access_screen.dart';
 import 'vpn_screen.dart';
 import 'test_download_screen.dart';
 
@@ -18,7 +18,7 @@ class _TabsScreenState extends State<TabsScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
-    InternalAccessScreen(),
+    AndroidDataAccessScreen(),
     VpnScreen(),
     ApiTestScreen(),
   ];

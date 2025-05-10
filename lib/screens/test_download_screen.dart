@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:flutter/material.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:lynxgaming/helpers/fetch_api.dart';
@@ -17,6 +19,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
   double _downloadProgress = 0.0;
   String _statusMessage = 'Mengambil data...';
   String _downloadMessage = '';
+  // ignore: non_constant_identifier_names
   Map<String, dynamic>? Result;
   String? _extractPath;
   List<FileSystemEntity> _extractedFiles = [];
@@ -209,6 +212,13 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
                           color: _extractPath != null ? Colors.green : Colors.orange,
                         ),
                       ),
+                      if (_extractPath != null) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          'Path Ekstraksi: $_extractPath',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ],
                     ],
                   ],
                 ),
@@ -217,6 +227,18 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
+                Expanded(
+                  child: ElevatedButton.icon(
+                    onPressed: _isLoading ? null : _fetchData,
+                    icon: const Icon(Icons.refresh),
+                    label: Text(_isLoading ? 'Memuat...' : 'Muat Ulang Data'),
+                    style: ElevatedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                    ),
+                  ),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
@@ -239,8 +261,67 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
                 style: const TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
-           
+              Container(
+                height: 100,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: ListView.builder(
+                  itemCount: _extractedFiles.length,
+                  itemBuilder: (context, index) {
+                    final file = _extractedFiles[index];
+                    final fileName = file.path.split('/').last;
+                    final isDirectory = file is Directory;
+                    
+                    return ListTile(
+                      dense: true,
+                      leading: Icon(
+                        isDirectory ? Icons.folder : Icons.insert_drive_file,
+                        color: isDirectory ? Colors.amber : Colors.blue,
+                      ),
+                      title: Text(fileName),
+                      subtitle: Text(file.path),
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(height: 16),
             ],
+            Expanded(
+              child: Result == null
+                  ? const Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.info_outline, size: 48, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text('Belum ada data untuk ditampilkan'),
+                        ],
+                      ),
+                    )
+                  : Card(
+                      child: ListView(
+                        padding: const EdgeInsets.all(16.0),
+                        children: [
+                          const Text(
+                            'Response dari API:',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          const Divider(),
+                          ...Result!.entries.map((entry) {
+                            return ListTile(
+                              title: Text(entry.key),
+                              subtitle: Text(entry.value.toString()),
+                            );
+                          }).toList(),
+                        ],
+                      ),
+                    ),
+            ),
             const Card(
               child: Padding(
                 padding: EdgeInsets.all(16.0),

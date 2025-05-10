@@ -151,13 +151,6 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
   }
 
   Future<void> _testAccess() async {
-  /// Menguji akses aplikasi ke penyimpanan internal dan eksternal.
-  ///
-  /// Fungsi ini akan mencoba menulis file di internal storage dan
-  /// mengakses folder Android/data. Jika akses berhasil, maka akan
-  /// menampilkan pesan "Berhasil menulis file di Android/data!".
-  /// Jika akses gagal, maka akan menampilkan pesan error yang
-  /// sesuai.
     try {
       // Coba tulis file test di internal storage
       final appDir = await getExternalStorageDirectory();
@@ -169,69 +162,10 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
       final testFile = File('${appDir.path}/test_write.txt');
       await testFile.writeAsString('Test akses tulis: ${DateTime.now()}');
       _showMessage('Dapat menulis file di folder aplikasi');
-      
-      // Mencoba akses folder Android/data
-      // Ini akan gagal tanpa SAF atau MANAGE_EXTERNAL_STORAGE
-      String? androidDataPath;
-      try {
-        // Coba mendapatkan path lengkap ke Android/data
-        // Ini akan bekerja pada beberapa device, tapi tidak semua
-        // ignore: prefer_interpolation_to_compose_strings
-        androidDataPath = appDir.path.split('Android')[0] + 'Android/data';
-      } catch (e) {
-        // Fallback method untuk mencari Android/data
-        try {
-          Directory? storageDir;
-          if (Platform.isAndroid) {
-            // Mencoba mendapatkan external storage root
-            final result = await Process.run('stat', ['-c', '%m', '/storage/emulated/0']);
-            final output = result.stdout.toString().trim();
-            if (output.isNotEmpty) {
-              storageDir = Directory('/storage/emulated/0');
-            }
-          }
-          
-          if (storageDir != null) {
-            androidDataPath = '${storageDir.path}/Android/data';
-          }
-        } catch (e) {
-          _showMessage('Tidak dapat menemukan path Android/data: $e');
-          return;
-        }
-      }
-      
-      if (androidDataPath == null) {
-        _showMessage('Tidak dapat menentukan path Android/data');
-        return;
-      }
-      
-      // Debug info
-      _showMessage('Mencoba akses path: $androidDataPath');
-      
-      final directory = Directory(androidDataPath);
-      final exists = await directory.exists();
-      
-      if (exists) {
-        try {
-          final contents = directory.listSync();
-          _showMessage('SUKSES! Dapat mengakses ${contents.length} item di Android/data');
-          
-          // Mencoba menulis file di Android/data untuk memastikan write access
-          try {
-            final testDataFile = File('$androidDataPath/test_app_access.txt');
-            await testDataFile.writeAsString('Test akses: ${DateTime.now()}');
-            _showMessage('Berhasil menulis file di Android/data!');
-          } catch (e) {
-            _showMessage('Dapat membaca tapi tidak menulis: $e');
-          }
-        } catch (e) {
-          _showMessage('Folder ada tapi tidak bisa dibaca: $e');
-        }
-      } else {
-        _showMessage('Folder Android/data tidak ditemukan di $androidDataPath');
-      }
-    } catch (e) {
-      _showMessage('Error saat mengakses penyimpanan: $e');
+    }
+    catch (e) {
+      _showMessage('Gagal menulis file di folder aplikasi: $e');
+      return;
     }
   }
 

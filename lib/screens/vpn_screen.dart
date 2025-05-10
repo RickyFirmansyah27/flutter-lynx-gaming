@@ -35,7 +35,6 @@ class _VpnScreenState extends State<VpnScreen> with SingleTickerProviderStateMix
   Future<void> _initV2Ray() async {
     flutterV2ray = FlutterV2ray(
       onStatusChanged: (status) {
-        print('V2Ray Status: ${status.state}, Details: ${status.toString()}');
         setState(() {
           isActive = status.state == 'CONNECTED';
           connectionStatusText = 'Status: ${status.state}';
@@ -46,9 +45,7 @@ class _VpnScreenState extends State<VpnScreen> with SingleTickerProviderStateMix
     try {
       await flutterV2ray.initializeV2Ray();
       v2rayURL = FlutterV2ray.parseFromURL(v2rayShareLink);
-      print('Parsed V2Ray Config: ${v2rayURL?.getFullConfiguration()}');
-    } catch (e, stackTrace) {
-      print('Error initializing V2Ray or parsing URL: $e\n$stackTrace');
+    } catch (e) {
       setState(() {
         connectionStatusText = 'Initialization Failed: $e';
       });
@@ -80,7 +77,6 @@ class _VpnScreenState extends State<VpnScreen> with SingleTickerProviderStateMix
           connectionStatusText = 'Status: DISCONNECTED';
         });
       } catch (e) {
-        print('Error stopping V2Ray: $e');
         setState(() {
           connectionStatusText = 'Stop Failed: $e';
         });
@@ -104,8 +100,7 @@ class _VpnScreenState extends State<VpnScreen> with SingleTickerProviderStateMix
           // Uji ping setelah koneksi berhasil
           await Future.delayed(const Duration(seconds: 2));
           if (isActive) checkPing();
-        } catch (e, stackTrace) {
-          print('Error starting V2Ray: $e\n$stackTrace');
+        } catch (e) {
           setState(() {
             connectionStatusText = 'Connection Failed: $e';
           });
@@ -159,8 +154,7 @@ class _VpnScreenState extends State<VpnScreen> with SingleTickerProviderStateMix
       setState(() {
         pingResult = '⏱ Timeout: no response within 5s';
       });
-    } catch (e, stackTrace) {
-      print('Ping error: $e\n$stackTrace');
+    } catch (e) {
       setState(() {
         pingResult = '❌ Error: $e';
       });

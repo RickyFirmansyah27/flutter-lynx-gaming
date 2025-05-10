@@ -28,8 +28,12 @@ class StorageHelper {
   // Menguji akses baca/tulis penyimpanan
   static Future<String> testStorageAccess() async {
     try {
-      final appDir = await getApplicationDocumentsDirectory();
-      final testFile = File('${appDir.path}/test_write.txt');
+      final appDir = await getExternalStorageDirectory();
+      if (appDir == null) {
+        print('Tidak dapat menemukan external storage directory');
+      }
+      
+      final testFile = File('${appDir}/test_write.txt');
       await testFile.writeAsString('Test akses tulis: ${DateTime.now()}');
       final content = await testFile.readAsString();
       return 'Berhasil menulis dan membaca file di penyimpanan internal!\nIsi: $content';

@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print
+
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
@@ -146,11 +148,6 @@ class DownloadHelper {
       } catch (e) {
         print('File bukan format ZIP: $e');
         inputStream.close();
-        return false;
-      }
-      
-      if (archive == null) {
-        print('Gagal mendekode archive');
         return false;
       }
       
