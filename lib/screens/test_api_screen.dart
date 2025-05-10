@@ -21,8 +21,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     });
 
     try {
-      // Ganti '/api/data' dengan endpoint GET Anda di Vercel
-      final data = await HttpHelper.get('/v1/items');
+      final data = await HttpHelper.get('/skins');
       setState(() {
         _apiData = data;
         _statusMessage = 'Data berhasil diambil!';

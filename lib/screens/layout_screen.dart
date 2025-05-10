@@ -4,6 +4,7 @@ import 'package:lynxgaming/constant/theme.dart';
 
 import 'backup_screen.dart';
 import 'vpn_screen.dart';
+import 'test_api_screen.dart';
 
 
 class TabsScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _TabsScreenState extends State<TabsScreen> {
   final List<Widget> _pages = const [
     BackupScreen(),
     VpnScreen(),
+    ApiTestScreen(),
   ];
 
   @override
@@ -52,12 +54,16 @@ class _TabsScreenState extends State<TabsScreen> {
         onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.shield),
+            icon: Icon(CupertinoIcons.folder),
             label: 'BACKUP',
           ),
           BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.shield),
+            label: 'VPN',
+          ),
+           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.gear),
-            label: 'SETTINGS',
+            label: 'CONFIG',
           ),
         ],
       ),

@@ -2,7 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class HttpHelper {
-  static const String _baseUrl = 'https://golang-fiber-backend.vercel.app'; // Ganti dengan URL Vercel Anda
+  static const String _baseUrl = 'https://golang-lynx-gaming.vercel.app/v1'; // Ganti dengan URL Vercel Anda
 
   // Fungsi untuk GET request
   static Future<Map<String, dynamic>> get(String endpoint) async {

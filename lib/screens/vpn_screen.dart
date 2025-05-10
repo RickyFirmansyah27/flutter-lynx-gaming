@@ -91,7 +91,7 @@ class _VpnScreenState extends State<VpnScreen> with SingleTickerProviderStateMix
           await flutterV2ray.startV2Ray(
             remark: v2rayURL!.remark,
             config: v2rayURL!.getFullConfiguration(),
-            proxyOnly: false, // Ubah ke true jika ingin proxy selektif
+            // proxyOnly: false, // Ubah ke true jika ingin proxy selektif
             bypassSubnets: [
               '192.168.0.0/16', // Bypass jaringan lokal
               '10.0.0.0/8',     // Bypass jaringan pribadi
