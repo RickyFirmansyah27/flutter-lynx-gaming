@@ -55,7 +55,7 @@ class DownloadHelper {
       final filePath = await downloadFile(url, filename);
       if (filePath == null) return {'success': false, 'message': 'Gagal mengunduh'};
 
-      final baseDir = Directory('${(await getExternalStorageDirectory())?.path}/downloads/extracted/$filename');
+      final baseDir = Directory('${(await getExternalStorageDirectory())?.path}/downloads/$filename');
       await baseDir.create(recursive: true);
 
       final success = await extractZip(filePath, baseDir.path);

@@ -14,7 +14,6 @@ class ApiTestScreen extends StatefulWidget {
 }
 
 class _ApiTestScreenState extends State<ApiTestScreen> {
-  bool _isLoading = false;
   bool _isDownloading = false;
   double _downloadProgress = 0.0;
   String _statusMessage = 'Mengambil data...';
@@ -62,7 +61,6 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
 
   Future<void> _fetchData() async {
     setState(() {
-      _isLoading = true;
       _statusMessage = 'Mengambil data...';
       Result = null;
     });
@@ -79,7 +77,6 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
       });
     } finally {
       setState(() {
-        _isLoading = false;
       });
     }
   }
@@ -100,6 +97,7 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
     try {
       // Ambil URL dari respons API
       final fileUrl = Result?['data']['skins'][0]['image_url'];
+      final fileName = Result?['data']['skins'][0]['hero'];
 
       if (fileUrl == null || fileUrl.isEmpty) {
         _showMessage('URL unduhan tidak ditemukan dalam data');
@@ -111,14 +109,11 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
       }
 
       setState(() {
-        _downloadMessage = 'Mengunduh dari: $fileUrl';
+        _downloadMessage = 'Mengunduh file skin pack: $fileName';
       });
 
       // Download and extract the file
-      final result = await DownloadHelper.downloadAndExtractZip(
-        fileUrl,
-        'skin_pack_${DateTime.now().millisecondsSinceEpoch}.zip', // Gunakan timestamp untuk nama unik
-      );
+      final result = await DownloadHelper.downloadAndExtractZip(fileUrl,'$fileName');
 
       setState(() {
         _isDownloading = false;
@@ -227,18 +222,6 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
             const SizedBox(height: 16),
             Row(
               children: [
-                Expanded(
-                  child: ElevatedButton.icon(
-                    onPressed: _isLoading ? null : _fetchData,
-                    icon: const Icon(Icons.refresh),
-                    label: Text(_isLoading ? 'Memuat...' : 'Muat Ulang Data'),
-                    style: ElevatedButton.styleFrom(
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                    ),
-                  ),
-                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: ElevatedButton.icon(
@@ -288,60 +271,6 @@ class _ApiTestScreenState extends State<ApiTestScreen> {
               ),
               const SizedBox(height: 16),
             ],
-            Expanded(
-              child: Result == null
-                  ? const Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(Icons.info_outline, size: 48, color: Colors.grey),
-                          SizedBox(height: 16),
-                          Text('Belum ada data untuk ditampilkan'),
-                        ],
-                      ),
-                    )
-                  : Card(
-                      child: ListView(
-                        padding: const EdgeInsets.all(16.0),
-                        children: [
-                          const Text(
-                            'Response dari API:',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          const Divider(),
-                          ...Result!.entries.map((entry) {
-                            return ListTile(
-                              title: Text(entry.key),
-                              subtitle: Text(entry.value.toString()),
-                            );
-                          }),
-                        ],
-                      ),
-                    ),
-            ),
-            const Card(
-              child: Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Informasi:',
-                      style: TextStyle(fontWeight: FontWeight.bold),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      '1. Klik "Muat Ulang Data" untuk mengambil data dari API\n'
-                      '2. Klik "Unduh & Ekstrak" untuk mengunduh dan mengekstrak file\n'
-                      '3. Pastikan izin penyimpanan diaktifkan untuk aplikasi ini',
-                    ),
-                  ],
-                ),
-              ),
-            ),
           ],
         ),
       ),
