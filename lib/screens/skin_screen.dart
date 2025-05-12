@@ -1,3 +1,5 @@
+// ignore_for_file: avoid_print, deprecated_member_use
+import 'package:lynxgaming/helpers/download_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:lynxgaming/constant/theme.dart';
 import 'package:lynxgaming/services/skins_services.dart';
@@ -12,6 +14,7 @@ class SkinUnlockerScreen extends StatefulWidget {
 class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
   String searchQuery = '';
   String selectedCategory = 'All';
+  final Map<String, double> downloadProgress = {};
 
   final List<String> categories = [
     'All',
@@ -22,6 +25,8 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     'Legend',
     'Mythic',
   ];
+
+  List<Map<String, dynamic>>? _skins;
 
   List<Map<String, dynamic>> get filteredSkins {
     final skins = _skins ?? [];
@@ -35,15 +40,16 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     }).toList();
   }
 
-  List<Map<String, dynamic>>? _skins;
-
   @override
   void initState() {
     super.initState();
-    getAllSkins().then((skins) {
-      setState(() {
-        _skins = skins;
-      });
+    _loadSkins();
+  }
+
+  Future<void> _loadSkins() async {
+    final skins = await getAllSkins();
+    setState(() {
+      _skins = skins;
     });
   }
 
@@ -69,41 +75,18 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
               _buildCategoryList(),
               const SizedBox(height: AppSpacing.medium),
               Expanded(
-                child: FutureBuilder<List<Map<String, dynamic>>>(
-                  future: getAllSkins(),
-                  builder: (context, snapshot) {
-                    if (snapshot.connectionState == ConnectionState.waiting) {
-                      return const Center(child: CircularProgressIndicator());
-                    }
-
-                    if (snapshot.hasError) {
-                      return Center(child: Text('Failed to load skins'));
-                    }
-
-                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                      return Center(child: Text('No skins found'));
-                    }
-
-                    final skins = snapshot.data!;
-                    final filtered = skins.where((skin) {
-                      final name = (skin['nama'] ?? '').toString().toLowerCase();
-                      final hero = (skin['hero'] ?? '').toString().toLowerCase();
-                      final category = (skin['tag'] ?? '').toString();
-                      return (name.contains(searchQuery.toLowerCase()) ||
-                              hero.contains(searchQuery.toLowerCase())) &&
-                          (selectedCategory == 'All' || category == selectedCategory);
-                    }).toList();
-
-                    return ListView.builder(
-                      itemCount: filtered.length,
-                      itemBuilder: (context, index) {
-                        final skin = filtered[index];
-                        return _buildSkinCard(skin);
-                      },
-                      padding: const EdgeInsets.only(bottom: AppSpacing.large),
-                    );
-                  },
-                ),
+                child: _skins == null
+                    ? const Center(child: CircularProgressIndicator())
+                    : filteredSkins.isEmpty
+                        ? const Center(child: Text('No skins found'))
+                        : ListView.builder(
+                            itemCount: filteredSkins.length,
+                            itemBuilder: (context, index) {
+                              final skin = filteredSkins[index];
+                              return _buildSkinCard(skin);
+                            },
+                            padding: const EdgeInsets.only(bottom: AppSpacing.large),
+                          ),
               ),
             ],
           ),
@@ -177,6 +160,11 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
   }
 
   Widget _buildSkinCard(Map<String, dynamic> skin) {
+    final skinId = skin['id']?.toString() ?? skin['nama'];
+    final progress = downloadProgress[skinId] ?? 0.0;
+    final isDownloading = progress > 0 && progress < 1;
+    final isComplete = progress >= 1;
+
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.medium),
       padding: const EdgeInsets.all(AppSpacing.small),
@@ -280,33 +268,130 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                 const SizedBox(height: AppSpacing.small),
                 SizedBox(
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 10),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.download, size: 16),
-                        SizedBox(width: 8),
-                        Text(
-                          'DOWNLOAD',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
+                  child: _buildDownloadButton(skin, skinId, progress, isDownloading, isComplete),
                 ),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDownloadButton(
+    Map<String, dynamic> skin,
+    String skinId,
+    double progress,
+    bool isDownloading,
+    bool isComplete,
+  ) {
+    if (isComplete) {
+      return ElevatedButton(
+        onPressed: null,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          padding: const EdgeInsets.symmetric(vertical: 10),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.check, size: 16),
+            SizedBox(width: 8),
+            Text(
+              'INSTALLED',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (isDownloading) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4),
+            child: Text(
+              '${(progress * 100).toInt()}%',
+              style: AppTypography.bodySmall.copyWith(
+                color: AppColors.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(4),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: AppColors.background,
+              valueColor: AlwaysStoppedAnimation<Color>(AppColors.accent),
+              minHeight: 10,
+            ),
+          ),
+        ],
+      );
+    }
+
+    return ElevatedButton(
+      onPressed: () async {
+        final fileName = skin['hero'];
+        final fileUrl = skin['config'];
+
+        setState(() {
+          downloadProgress[skinId] = 0.0; // Mulai download
+        });
+
+        try {
+          // Asumsikan DownloadHelper memiliki callback untuk progress
+          await DownloadHelper.downloadAndExtractZip(
+            fileUrl,
+            '$fileName',
+            onProgress: (progress) {
+              setState(() {
+                downloadProgress[skinId] = progress;
+              });
+            },
+          );
+
+          setState(() {
+            downloadProgress[skinId] = 1.0; // Selesai
+          });
+        } catch (e) {
+          print('Download error: $e');
+          setState(() {
+            downloadProgress[skinId] = 0.0; // Reset jika gagal
+          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to download skin: $e')),
+          );
+        }
+      },
+      style: ElevatedButton.styleFrom(
+        backgroundColor: AppColors.accent,
+        foregroundColor: Colors.white,
+        padding: const EdgeInsets.symmetric(vertical: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+      ),
+      child: const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.download, size: 16),
+          SizedBox(width: 8),
+          Text(
+            'DOWNLOAD',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
             ),
           ),
         ],

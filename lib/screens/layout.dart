@@ -4,7 +4,6 @@ import 'package:lynxgaming/constant/theme.dart';
 
 import 'check_access_screen.dart';
 import 'vpn_screen.dart';
-import 'test_download_screen.dart';
 import 'skin_screen.dart';
 
 
@@ -22,7 +21,6 @@ class _TabsScreenState extends State<TabsScreen> {
     AndroidDataAccessScreen(),
     SkinUnlockerScreen(),
     VpnScreen(),
-    ApiTestScreen(),
   ];
 
   @override
@@ -55,10 +53,6 @@ class _TabsScreenState extends State<TabsScreen> {
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.shield),
             label: 'VPN',
-          ),
-           BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.gear),
-            label: 'DOWNLOAD',
           ),
         ],
       ),

@@ -9,18 +9,42 @@ import 'package:archive/archive_io.dart';
 class DownloadHelper {
   static final Dio _dio = Dio();
 
-  static Future<String?> downloadFile(String url, String filename) async {
+  static Future<String?> downloadFile(
+    String url,
+    String filename, {
+    Function(double)? onProgress,
+  }) async {
     try {
-      if (url.isEmpty || filename.isEmpty) throw Exception('URL atau nama file kosong');
-      final dir = Directory('${(await getApplicationDocumentsDirectory()).path}/downloads');
+      if (url.isEmpty || filename.isEmpty) {
+        throw Exception('URL atau nama file kosong');
+      }
+      final dir = Directory(
+        '${(await getApplicationDocumentsDirectory()).path}/downloads',
+      );
       if (!await dir.exists()) await dir.create(recursive: true);
       final path = '${dir.path}/$filename';
       final file = File(path);
       if (await file.exists()) await file.delete();
 
-      await _dio.download(url, path,
-        onReceiveProgress: (r, t) => print('Progress: ${(r / t * 100).toStringAsFixed(0)}%'),
-        options: Options(validateStatus: (s) => s != null && s < 500));
+      double lastProgress = 0.0;
+
+      await _dio.download(
+        url,
+        path,
+        onReceiveProgress: (received, total) {
+          if (total > 0) {
+            final progress = received / total;
+
+            // Update hanya jika naik 1% atau lebih
+            if ((progress - lastProgress) >= 0.01) {
+              lastProgress = progress;
+              onProgress?.call(progress);
+              print('Progress: ${(progress * 100).toStringAsFixed(0)}%');
+            }
+          }
+        },
+        options: Options(validateStatus: (s) => s != null && s < 500),
+      );
 
       return await file.exists() ? path : null;
     } catch (e) {
@@ -50,16 +74,34 @@ class DownloadHelper {
     }
   }
 
-  static Future<Map<String, dynamic>> downloadAndExtractZip(String url, String filename) async {
+  static Future<Map<String, dynamic>> downloadAndExtractZip(
+    String url,
+    String filename, {
+    Function(double)? onProgress,
+  }) async {
     try {
-      final filePath = await downloadFile(url, filename);
-      if (filePath == null) return {'success': false, 'message': 'Gagal mengunduh'};
+      final filePath = await downloadFile(
+        url,
+        '$filename.zip',
+        onProgress: onProgress,
+      );
+      if (filePath == null) {
+        return {'success': false, 'message': 'Gagal mengunduh'};
+      }
 
-      final baseDir = Directory('${(await getExternalStorageDirectory())?.path}/downloads/$filename');
+      final baseDir = Directory(
+        '${(await getExternalStorageDirectory())?.path}/downloads/$filename',
+      );
       await baseDir.create(recursive: true);
 
       final success = await extractZip(filePath, baseDir.path);
-      if (!success) return {'success': false, 'message': 'Ekstraksi gagal', 'downloadPath': filePath};
+      if (!success) {
+        return {
+          'success': false,
+          'message': 'Ekstraksi gagal',
+          'downloadPath': filePath,
+        };
+      }
 
       final files = await baseDir.list().toList();
       return {
@@ -67,7 +109,7 @@ class DownloadHelper {
         'message': 'Berhasil',
         'downloadPath': filePath,
         'extractPath': baseDir.path,
-        'fileCount': files.length
+        'fileCount': files.length,
       };
     } catch (e) {
       return {'success': false, 'message': 'Error: $e'};
