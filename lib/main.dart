@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lynxgaming/constant/theme.dart';
-import 'package:lynxgaming/screens/splash_screen.dart';
+import 'package:lynxgaming/screens/onboarding_screen.dart';
 
 void main() {
   runApp(const LynxApp());
