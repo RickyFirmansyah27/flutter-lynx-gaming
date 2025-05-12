@@ -1,4 +1,3 @@
-// ignore_for_file: avoid_print, deprecated_member_use
 import 'package:lynxgaming/helpers/download_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:lynxgaming/constant/theme.dart';
@@ -10,6 +9,7 @@ class SkinUnlockerScreen extends StatefulWidget {
   @override
   State<SkinUnlockerScreen> createState() => _SkinUnlockerScreenState();
 }
+
 
 class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
   String searchQuery = '';
@@ -51,6 +51,11 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     setState(() {
       _skins = skins;
     });
+  }
+
+  void _showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override
@@ -341,16 +346,17 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     }
 
     return ElevatedButton(
-      onPressed: () async {
+     onPressed: downloadProgress.containsKey(skinId) && downloadProgress[skinId]! > 0
+    ? null // Disable jika sudah mulai download
+    : () async {
+        setState(() {
+          downloadProgress[skinId] = 0.01; // Tandai mulai download
+        });
+
         final fileName = skin['hero'];
         final fileUrl = skin['config'];
 
-        setState(() {
-          downloadProgress[skinId] = 0.0; // Mulai download
-        });
-
         try {
-          // Asumsikan DownloadHelper memiliki callback untuk progress
           await DownloadHelper.downloadAndExtractZip(
             fileUrl,
             '$fileName',
@@ -362,12 +368,12 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
           );
 
           setState(() {
-            downloadProgress[skinId] = 1.0; // Selesai
+            downloadProgress[skinId] = 1.0;
           });
         } catch (e) {
-          print('Download error: $e');
+          _showMessage('Download error: $e');
           setState(() {
-            downloadProgress[skinId] = 0.0; // Reset jika gagal
+            downloadProgress.remove(skinId); // Hapus jika gagal
           });
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(content: Text('Failed to download skin: $e')),

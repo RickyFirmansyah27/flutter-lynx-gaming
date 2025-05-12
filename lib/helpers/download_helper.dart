@@ -39,7 +39,6 @@ class DownloadHelper {
             if ((progress - lastProgress) >= 0.01) {
               lastProgress = progress;
               onProgress?.call(progress);
-              print('Progress: ${(progress * 100).toStringAsFixed(0)}%');
             }
           }
         },
