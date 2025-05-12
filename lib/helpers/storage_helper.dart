@@ -14,35 +14,35 @@ class StorageHelper {
     await prefs.setBool(_permissionKey, granted);
   }
 
-  static Future<bool> checkStoragePermission() async {
+  static Future<bool> checkStoragePermission({required bool isAndroid11OrAbove}) async {
     if (await _isPermissionPermanentlyGranted()) {
       return true;
     }
 
-    final status = await Permission.storage.status;
+    final permission = isAndroid11OrAbove ? Permission.manageExternalStorage : Permission.storage;
+    final status = await permission.status;
     if (status.isGranted) {
       await _setPermissionPermanentlyGranted(true);
     }
     return status.isGranted;
   }
 
-  static Future<bool> requestStoragePermission() async {
+  static Future<bool> requestStoragePermission({required bool isAndroid11OrAbove}) async {
     if (await _isPermissionPermanentlyGranted()) {
       return true;
     }
 
-    final status = await Permission.storage.request();
+    final permission = isAndroid11OrAbove ? Permission.manageExternalStorage : Permission.storage;
+    final status = await permission.request();
     if (status.isGranted) {
       await _setPermissionPermanentlyGranted(true);
-    } else if (!status.isPermanentlyDenied) {
-      await openAppSettings();
     }
     return status.isGranted;
   }
 
-  static String getAccessStatusMessage(bool hasAccess) {
+  static String getAccessStatusMessage(bool hasAccess, {required bool isAndroid11OrAbove, required String androidVersion}) {
     return hasAccess
-        ? "Memiliki akses ke penyimpanan internal"
-        : "Belum memiliki akses ke penyimpanan internal";
+        ? "Memiliki akses ${isAndroid11OrAbove ? 'lengkap' : ''} (Android $androidVersion)"
+        : "Belum memiliki akses ${isAndroid11OrAbove ? 'lengkap' : ''}";
   }
 }
