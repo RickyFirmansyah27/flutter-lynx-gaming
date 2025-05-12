@@ -55,7 +55,7 @@ class _TabsScreenState extends State<TabsScreen> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.folder),
-            label: 'BACKUP',
+            label: 'TEST',
           ),
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.shield),
@@ -63,7 +63,7 @@ class _TabsScreenState extends State<TabsScreen> {
           ),
            BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.gear),
-            label: 'CONFIG',
+            label: 'DOWNLOAD',
           ),
         ],
       ),
