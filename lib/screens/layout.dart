@@ -5,6 +5,7 @@ import 'package:lynxgaming/constant/theme.dart';
 import 'check_access_screen.dart';
 import 'vpn_screen.dart';
 import 'test_download_screen.dart';
+import 'skin_screen.dart';
 
 
 class TabsScreen extends StatefulWidget {
@@ -19,6 +20,7 @@ class _TabsScreenState extends State<TabsScreen> {
 
   final List<Widget> _pages = const [
     AndroidDataAccessScreen(),
+    SkinUnlockerScreen(),
     VpnScreen(),
     ApiTestScreen(),
   ];
@@ -56,6 +58,10 @@ class _TabsScreenState extends State<TabsScreen> {
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.folder),
             label: 'TEST',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(CupertinoIcons.flame),
+            label: 'SKIN',
           ),
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.shield),

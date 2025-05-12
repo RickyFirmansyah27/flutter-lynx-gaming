@@ -168,10 +168,6 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Akses Android/data'),
-        backgroundColor: _hasAccess ? Colors.green : Colors.orange,
-      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
