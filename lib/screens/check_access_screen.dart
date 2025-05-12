@@ -10,6 +10,64 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 
+// StorageHelper class
+class StorageHelper {
+  static const String _permissionKey = 'storage_permission_granted';
+
+  // Memeriksa apakah izin sudah pernah diberikan sebelumnya
+  static Future<bool> _isPermissionPermanentlyGranted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_permissionKey) ?? false;
+  }
+
+  // Menyimpan status izin ke SharedPreferences
+  static Future<void> _setPermissionPermanentlyGranted(bool granted) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_permissionKey, granted);
+  }
+
+  // Memeriksa status izin penyimpanan
+  static Future<bool> checkStoragePermission({required bool isAndroid11OrAbove}) async {
+    // Cek apakah izin sudah permanen dari SharedPreferences
+    if (await _isPermissionPermanentlyGranted()) {
+      return true;
+    }
+
+    final permission = isAndroid11OrAbove ? Permission.manageExternalStorage : Permission.storage;
+    final status = await permission.status;
+    if (status.isGranted) {
+      // Simpan status izin jika sudah diberikan
+      await _setPermissionPermanentlyGranted(true);
+    }
+    return status.isGranted;
+  }
+
+  // Meminta izin penyimpanan
+  static Future<bool> requestStoragePermission({required bool isAndroid11OrAbove}) async {
+    // Jika izin sudah permanen, kembalikan true
+    if (await _isPermissionPermanentlyGranted()) {
+      return true;
+    }
+
+    final permission = isAndroid11OrAbove ? Permission.manageExternalStorage : Permission.storage;
+    final status = await permission.request();
+    if (status.isGranted) {
+      // Simpan status izin ke SharedPreferences
+      await _setPermissionPermanentlyGranted(true);
+    } else if (!status.isPermanentlyDenied) {
+      await openAppSettings();
+    }
+    return status.isGranted;
+  }
+
+  // Mendapatkan pesan status akses
+  static String getAccessStatusMessage(bool hasAccess, {required bool isAndroid11OrAbove, required String androidVersion}) {
+    return hasAccess
+        ? "Memiliki akses ${isAndroid11OrAbove ? 'lengkap' : ''} (Android $androidVersion)"
+        : "Belum memiliki akses ${isAndroid11OrAbove ? 'lengkap' : ''}";
+  }
+}
+
 class AndroidDataAccessScreen extends StatefulWidget {
   const AndroidDataAccessScreen({super.key});
 
@@ -20,6 +78,8 @@ class AndroidDataAccessScreen extends StatefulWidget {
 class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
   bool _hasAccess = false;
   String _accessStatus = "Belum memiliki akses";
+  late bool _isAndroid11OrAbove;
+  String _androidVersion = '';
 
   @override
   void initState() {
@@ -31,27 +91,20 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
     final deviceInfo = DeviceInfoPlugin();
     final androidInfo = await deviceInfo.androidInfo;
     
-    // Untuk Android 10 ke bawah, cek izin storage biasa
-    if (androidInfo.version.sdkInt < 30) {
-      final status = await Permission.storage.status;
-      setState(() {
-        _hasAccess = status.isGranted;
-        _accessStatus = status.isGranted 
-            ? "Memiliki akses (Android ${androidInfo.version.release})"
-            : "Belum memiliki akses";
-      });
-      return;
-    }
-    
-    // Untuk Android 11 ke atas, cek izin MANAGE_EXTERNAL_STORAGE
-    final status = await Permission.manageExternalStorage.status;
+    _isAndroid11OrAbove = androidInfo.version.sdkInt >= 30;
+    _androidVersion = androidInfo.version.release;
+
+    // Cek izin menggunakan StorageHelper
+    final hasAccess = await StorageHelper.checkStoragePermission(isAndroid11OrAbove: _isAndroid11OrAbove);
     setState(() {
-      _hasAccess = status.isGranted;
-      _accessStatus = status.isGranted 
-          ? "Memiliki akses lengkap (Android ${androidInfo.version.release})"
-          : "Belum memiliki akses lengkap";
+      _hasAccess = hasAccess;
+      _accessStatus = StorageHelper.getAccessStatusMessage(
+        hasAccess,
+        isAndroid11OrAbove: _isAndroid11OrAbove,
+        androidVersion: _androidVersion,
+      );
     });
-    
+
     // Cek apakah sudah pernah diberi akses lewat SAF
     final prefs = await SharedPreferences.getInstance();
     final hasUriPermission = prefs.getBool('has_android_data_access') ?? false;
@@ -65,50 +118,50 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
   Future<void> _requestStoragePermission() async {
     final deviceInfo = DeviceInfoPlugin();
     final androidInfo = await deviceInfo.androidInfo;
-    
+
     if (androidInfo.version.sdkInt < 30) {
       // Untuk Android 10 ke bawah
-      final status = await Permission.storage.request();
+      final hasAccess = await StorageHelper.requestStoragePermission(isAndroid11OrAbove: false);
       setState(() {
-        _hasAccess = status.isGranted;
-        _accessStatus = status.isGranted 
-            ? "Memiliki akses (Android ${androidInfo.version.release})"
-            : "Izin ditolak. Mohon aktifkan manual di pengaturan";
+        _hasAccess = hasAccess;
+        _accessStatus = StorageHelper.getAccessStatusMessage(
+          hasAccess,
+          isAndroid11OrAbove: false,
+          androidVersion: androidInfo.version.release,
+        );
       });
-      
-      if (!status.isGranted) {
-        await openAppSettings();
+      if (!hasAccess) {
+        _showMessage("Izin ditolak. Mohon aktifkan manual di pengaturan");
       }
     } else {
-      // Untuk Android 11 ke atas, kita perlu membuka settings secara eksplisit
-      // karena permission dialog tidak muncul otomatis untuk MANAGE_EXTERNAL_STORAGE
+      // Untuk Android 11 ke atas
       try {
-        // Mencoba status terlebih dahulu
-        final status = await Permission.manageExternalStorage.status;
-        
-        if (status.isGranted) {
-          setState(() {
-            _hasAccess = true;
-            _accessStatus = "Memiliki akses lengkap (Android ${androidInfo.version.release})";
-          });
-          return;
+        final hasAccess = await StorageHelper.requestStoragePermission(isAndroid11OrAbove: true);
+        setState(() {
+          _hasAccess = hasAccess;
+          _accessStatus = StorageHelper.getAccessStatusMessage(
+            hasAccess,
+            isAndroid11OrAbove: true,
+            androidVersion: androidInfo.version.release,
+          );
+        });
+
+        if (!hasAccess) {
+          // Membuka halaman settings untuk "All files access permission"
+          final intent = AndroidIntent(
+            action: 'android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION',
+            data: 'package:${androidInfo.packageName}',
+            flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+          );
+
+          await intent.launch();
+          _showMessage('Silakan aktifkan "Allow access to manage all files"');
+
+          // Cek ulang izin setelah beberapa detik
+          await Future.delayed(const Duration(seconds: 5));
+          _checkAccess();
         }
-        
-        // Membuka halaman settings untuk "All files access permission"
-        final intent = AndroidIntent(
-          action: 'android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION',
-          data: 'package:${androidInfo.packageName}',
-          flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
-        );
-        
-        await intent.launch();
-        _showMessage('Silakan aktifkan "Allow access to manage all files"');
-        
-        // Cek ulang izin setelah beberapa detik
-        await Future.delayed(const Duration(seconds: 5));
-        _checkAccess();
       } catch (e) {
-        // Fallback jika intent tidak berhasil
         _showMessage('Gagal membuka settings: $e');
         try {
           await openAppSettings();
@@ -133,18 +186,13 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
     try {
       await intent.launch();
       
-      // Idealnya di sini kita akan mendapatkan URI hasil dari SAF picker
-      // dan menyimpannya untuk penggunaan di masa mendatang
-      // Namun karena batasan plugin, ini perlu handling di Activity Result
-      
-      // Untuk contoh ini, kita simpan flag ke SharedPreferences
+      // Simpan flag ke SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       await prefs.setBool('has_android_data_access', true);
       
       // Update status setelah delay singkat
       await Future.delayed(const Duration(seconds: 3));
       _checkAccess();
-      
     } catch (e) {
       _showMessage('Gagal membuka SAF: $e');
     }
@@ -162,10 +210,8 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
       final testFile = File('${appDir.path}/test_write.txt');
       await testFile.writeAsString('Test akses tulis: ${DateTime.now()}');
       _showMessage('Dapat menulis file di folder aplikasi');
-    }
-    catch (e) {
+    } catch (e) {
       _showMessage('Gagal menulis file di folder aplikasi: $e');
-      return;
     }
   }
 
@@ -175,7 +221,7 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext Context) {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Akses Android/data'),
@@ -271,3 +317,4 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
 extension on AndroidDeviceInfo {
   get packageName => null;
 }
+

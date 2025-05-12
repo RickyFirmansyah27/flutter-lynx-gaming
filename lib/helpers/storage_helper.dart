@@ -1,46 +1,48 @@
-// ignore_for_file: avoid_print
-
 import 'package:permission_handler/permission_handler.dart';
-import 'package:path_provider/path_provider.dart';
-import 'dart:io';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageHelper {
-  // Memeriksa status izin penyimpanan
+  static const String _permissionKey = 'storage_permission_granted';
+
+  static Future<bool> _isPermissionPermanentlyGranted() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_permissionKey) ?? false;
+  }
+
+  static Future<void> _setPermissionPermanentlyGranted(bool granted) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_permissionKey, granted);
+  }
+
   static Future<bool> checkStoragePermission() async {
+    if (await _isPermissionPermanentlyGranted()) {
+      return true;
+    }
+
     final status = await Permission.storage.status;
+    if (status.isGranted) {
+      await _setPermissionPermanentlyGranted(true);
+    }
     return status.isGranted;
   }
 
-  // Meminta izin penyimpanan
   static Future<bool> requestStoragePermission() async {
+    if (await _isPermissionPermanentlyGranted()) {
+      return true;
+    }
+
     final status = await Permission.storage.request();
-    if (!status.isGranted) {
+    if (status.isGranted) {
+      await _setPermissionPermanentlyGranted(true);
+    } else if (!status.isPermanentlyDenied) {
       await openAppSettings();
     }
     return status.isGranted;
   }
 
-  // Mendapatkan pesan status akses
   static String getAccessStatusMessage(bool hasAccess) {
     return hasAccess
         ? "Memiliki akses ke penyimpanan internal"
         : "Belum memiliki akses ke penyimpanan internal";
-  }
-
-  // Menguji akses baca/tulis penyimpanan
-  static Future<String> testStorageAccess() async {
-    try {
-      final appDir = await getExternalStorageDirectory();
-      if (appDir == null) {
-        print('Tidak dapat menemukan external storage directory');
-      }
-      
-      final testFile = File('$appDir/test_write.txt');
-      await testFile.writeAsString('Test akses tulis: ${DateTime.now()}');
-      final content = await testFile.readAsString();
-      return 'Berhasil menulis dan membaca file di penyimpanan internal!\nIsi: $content';
-    } catch (e) {
-      return 'Gagal mengakses penyimpanan internal: $e';
-    }
   }
 }

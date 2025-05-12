@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lynxgaming/screens/layout_screen.dart';
+import 'package:lynxgaming/screens/layout.dart';
 
 class OnboardingScreen extends StatelessWidget {
   final List<Map<String, String>> featuredArenas = [
