@@ -113,6 +113,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  equatable:
+    dependency: transitive
+    description:
+      name: equatable
+      sha256: "567c64b3cb4cf82397aac55f4f0cbd3ca20d77c6c03bedbc4ceaddc08904aef7"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.0.7"
   external_path:
     dependency: "direct main"
     description:
@@ -166,6 +174,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.0.2"
+  flutter_hooks:
+    dependency: transitive
+    description:
+      name: flutter_hooks
+      sha256: b10cab7e0e4dbb60ff5360a740def3919aecbc672240f742a7130a2874204229
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.19.0"
   flutter_lints:
     dependency: "direct dev"
     description:
@@ -182,6 +198,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.28"
+  flutter_query:
+    dependency: "direct main"
+    description:
+      name: flutter_query
+      sha256: "648c95769fa67ddca237687487248738cf38c2a70e916d232054248115f35142"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.3.7"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -280,6 +304,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.16.0"
+  nested:
+    dependency: transitive
+    description:
+      name: nested
+      sha256: "03bac4c528c64c95c722ec99280375a6f2fc708eec17c7b3f07253b626cd2a20"
+      url: "https://pub.dev"
+    source: hosted
+    version: "1.0.0"
   path:
     dependency: transitive
     description:
@@ -408,6 +440,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.0.2"
+  provider:
+    dependency: transitive
+    description:
+      name: provider
+      sha256: "4abbd070a04e9ddc287673bf5a030c7ca8b685ff70218720abab8b092f53dd84"
+      url: "https://pub.dev"
+    source: hosted
+    version: "6.1.5"
+  query_core:
+    dependency: transitive
+    description:
+      name: query_core
+      sha256: "23ec55ab8123435e107df94276cca3ed972f9a4834b5a0b5085dda2402c41183"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.2.1"
   shared_preferences:
     dependency: "direct main"
     description:

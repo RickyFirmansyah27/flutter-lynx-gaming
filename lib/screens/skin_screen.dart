@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lynxgaming/constant/theme.dart';
+import 'package:lynxgaming/services/skins_services.dart';
 
 class SkinUnlockerScreen extends StatefulWidget {
   const SkinUnlockerScreen({super.key});
@@ -22,40 +23,28 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     'Mythic',
   ];
 
-  final List<Map<String, String>> skins = [
-    {
-      'id': '1',
-      'hero': 'Lucaz',
-      'name': 'Naruto',
-      'description':
-          'A divine skin that transforms Aurora into a celestial being with ethereal effects.',
-      'category': 'Mythic',
-      'size': '45 MB',
-      'image':
-          'https://i.pinimg.com/736x/56/e1/9a/56e19adc6d51a6265fc1a62bf32d76fa.jpg',
-    },
-    {
-      'id': '2',
-      'hero': 'Kai',
-      'name': 'DRAGON WARRIOR',
-      'description':
-          'Harness the power of ancient dragons with this legendary skin.',
-      'category': 'Legend',
-      'size': '38 MB',
-      'image':
-          'https://i.pinimg.com/736x/8e/3e/10/8e3e10b10297a6b3d4f4d1516828d9d9.jpg',
-    },
-  ];
-
-  List<Map<String, String>> get filteredSkins {
+  List<Map<String, dynamic>> get filteredSkins {
+    final skins = _skins ?? [];
     return skins.where((skin) {
-      final matchesSearch =
-          skin['hero']!.toLowerCase().contains(searchQuery.toLowerCase()) ||
-          skin['name']!.toLowerCase().contains(searchQuery.toLowerCase());
-      final matchesCategory =
-          selectedCategory == 'All' || skin['category'] == selectedCategory;
-      return matchesSearch && matchesCategory;
+      final name = (skin['nama'] ?? '').toString().toLowerCase();
+      final hero = (skin['hero'] ?? '').toString().toLowerCase();
+      final category = (skin['tag'] ?? '').toString();
+      return (name.contains(searchQuery.toLowerCase()) ||
+              hero.contains(searchQuery.toLowerCase())) &&
+          (selectedCategory == 'All' || category == selectedCategory);
     }).toList();
+  }
+
+  List<Map<String, dynamic>>? _skins;
+
+  @override
+  void initState() {
+    super.initState();
+    getAllSkins().then((skins) {
+      setState(() {
+        _skins = skins;
+      });
+    });
   }
 
   @override
@@ -80,13 +69,40 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
               _buildCategoryList(),
               const SizedBox(height: AppSpacing.medium),
               Expanded(
-                child: ListView.builder(
-                  itemCount: filteredSkins.length,
-                  itemBuilder: (context, index) {
-                    final skin = filteredSkins[index];
-                    return _buildSkinCard(skin);
+                child: FutureBuilder<List<Map<String, dynamic>>>(
+                  future: getAllSkins(),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+
+                    if (snapshot.hasError) {
+                      return Center(child: Text('Failed to load skins'));
+                    }
+
+                    if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                      return Center(child: Text('No skins found'));
+                    }
+
+                    final skins = snapshot.data!;
+                    final filtered = skins.where((skin) {
+                      final name = (skin['nama'] ?? '').toString().toLowerCase();
+                      final hero = (skin['hero'] ?? '').toString().toLowerCase();
+                      final category = (skin['tag'] ?? '').toString();
+                      return (name.contains(searchQuery.toLowerCase()) ||
+                              hero.contains(searchQuery.toLowerCase())) &&
+                          (selectedCategory == 'All' || category == selectedCategory);
+                    }).toList();
+
+                    return ListView.builder(
+                      itemCount: filtered.length,
+                      itemBuilder: (context, index) {
+                        final skin = filtered[index];
+                        return _buildSkinCard(skin);
+                      },
+                      padding: const EdgeInsets.only(bottom: AppSpacing.large),
+                    );
                   },
-                  padding: const EdgeInsets.only(bottom: AppSpacing.large),
                 ),
               ),
             ],
@@ -160,7 +176,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     );
   }
 
-  Widget _buildSkinCard(Map<String, String> skin) {
+  Widget _buildSkinCard(Map<String, dynamic> skin) {
     return Container(
       margin: const EdgeInsets.only(bottom: AppSpacing.medium),
       padding: const EdgeInsets.all(AppSpacing.small),
@@ -172,7 +188,6 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Image with Transform.translate to shift downward
           Transform.translate(
             offset: const Offset(0, 4),
             child: Container(
@@ -185,7 +200,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                   fit: StackFit.expand,
                   children: [
                     Image.network(
-                      skin['image']!,
+                      skin['image_url'] ?? '',
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
@@ -207,7 +222,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         width: double.infinity,
                         child: Text(
-                          skin['hero']!,
+                          skin['hero'] ?? '',
                           textAlign: TextAlign.center,
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.textPrimary,
@@ -221,13 +236,12 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
               ),
             ),
           ),
-          // Text and button on the right
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  skin['name']!,
+                  skin['nama'] ?? '',
                   style: AppTypography.titleSmall.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -235,7 +249,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  skin['description']!,
+                  skin['description'] ?? 'No description available',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                     fontSize: 12,
@@ -248,14 +262,14 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      skin['category']!,
+                      skin['tag'] ?? '',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.secondary,
                         fontSize: 12,
                       ),
                     ),
                     Text(
-                      skin['size']!,
+                      skin['size'] ?? '',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                         fontSize: 12,

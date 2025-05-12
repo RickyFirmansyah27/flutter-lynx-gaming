@@ -47,6 +47,7 @@ dependencies:
   dio: ^5.8.0+1
   archive: ^4.0.7
   external_path: ^2.2.0
+  flutter_query: ^0.3.7
 
 
 dev_dependencies:
