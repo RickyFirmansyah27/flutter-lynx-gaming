@@ -28,17 +28,6 @@ class _TabsScreenState extends State<TabsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          'Lynx Gaming',
-          style: TextStyle(
-            fontFamily: 'Orbitron-Bold',
-            fontSize: 18,
-            color: AppColors.textPrimary,
-          ),
-        ),
-        backgroundColor: AppColors.backgroundDark,
-      ),
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: AppColors.backgroundDark,
