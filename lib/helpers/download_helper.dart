@@ -33,8 +33,6 @@ class DownloadHelper {
         onReceiveProgress: (received, total) {
           if (total > 0) {
             final progress = received / total;
-
-            // Update hanya jika naik 1% atau lebih
             if ((progress - lastProgress) >= 0.01) {
               lastProgress = progress;
               onProgress?.call(progress);
@@ -55,16 +53,35 @@ class DownloadHelper {
     try {
       final file = File(filePath);
       if (!await file.exists()) throw Exception('File tidak ditemukan');
+
       final archive = ZipDecoder().decodeBytes(await file.readAsBytes());
+
+      // find dragon2017 folder
+      bool foundDragon2017 = false;
       for (final f in archive) {
-        final out = File('$destDir/${f.name}');
-        if (f.isFile) {
-          await out.create(recursive: true);
-          await out.writeAsBytes(f.content as List<int>);
-        } else {
-          await Directory(out.path).create(recursive: true);
+        final pathParts = f.name.split('/');
+        final dragonIndex = pathParts.indexOf('dragon2017');
+        if (dragonIndex != -1) {
+          foundDragon2017 = true;
+          final relativePath = pathParts.sublist(dragonIndex + 1).join('/');
+          if (relativePath.isEmpty) continue;
+
+          final outPath = '$destDir/$relativePath';
+          final out = File(outPath);
+
+          if (f.isFile) {
+            await out.create(recursive: true);
+            await out.writeAsBytes(f.content as List<int>);
+          } else {
+            await Directory(outPath).create(recursive: true);
+          }
         }
       }
+
+      if (!foundDragon2017) {
+        throw Exception('Folder dragon2017 tidak ditemukan di dalam zip');
+      }
+
       return true;
     } catch (e) {
       logger.e('Extract error: $e');
@@ -88,7 +105,7 @@ class DownloadHelper {
       }
 
       final baseDir = Directory(
-        '${(await getExternalStorageDirectory())?.path}/downloads/$filename',
+        '${(await getExternalStorageDirectory())?.path}/downloads/dragon2017',
       );
       await baseDir.create(recursive: true);
 
