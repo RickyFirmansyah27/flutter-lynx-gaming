@@ -15,20 +15,14 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
   String searchQuery = '';
   String selectedCategory = 'All';
   final Map<String, double> downloadProgress = {};
-  
+
   final int _pageSize = 5;
   int _currentPage = 1;
   bool _isLoading = false;
   bool _hasMoreData = true;
   final ScrollController _scrollController = ScrollController();
 
-  final List<String> categories = [
-    'All',
-    'Events',
-    'Epic',
-    'Legend',
-    'Mythic',
-  ];
+  final List<String> categories = ['All', 'Events', 'Epic', 'Legend', 'Mythic'];
 
   List<Map<String, dynamic>> _displayedSkins = [];
   Future<void> _applyFilters() async {
@@ -37,14 +31,16 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
       _currentPage = 1;
       _displayedSkins = [];
     });
-    
-    final skins = await getAllSkins(queryParams: {
-      'page': _currentPage,
-      'size': _pageSize,
-      'search': searchQuery.isNotEmpty ? searchQuery : null,
-      'tag': selectedCategory != 'All' ? selectedCategory : null,
-    });
-    
+
+    final skins = await getAllSkins(
+      queryParams: {
+        'page': _currentPage,
+        'size': _pageSize,
+        'search': searchQuery.isNotEmpty ? searchQuery : null,
+        'tag': selectedCategory != 'All' ? selectedCategory : null,
+      },
+    );
+
     setState(() {
       _displayedSkins = skins;
       _isLoading = false;
@@ -67,14 +63,15 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
   }
 
   void _scrollListener() {
-    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
       _loadMoreSkins();
     }
   }
 
   Future<void> _snackBarAction(message) async {
     if (!mounted) return;
-   SnackBarHelper.showMessage(context, message);
+    SnackBarHelper.showMessage(context, message);
   }
 
   Future<void> _loadSkins() async {
@@ -83,12 +80,11 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
       _currentPage = 1;
       _displayedSkins = [];
     });
-    
-    final skins = await getAllSkins(queryParams: {
-      'page': _currentPage,
-      'size': _pageSize,
-    });
-    
+
+    final skins = await getAllSkins(
+      queryParams: {'page': _currentPage, 'size': _pageSize},
+    );
+
     setState(() {
       _displayedSkins = skins;
       _isLoading = false;
@@ -102,12 +98,11 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
         _isLoading = true;
         _currentPage++;
       });
-      
-      final skins = await getAllSkins(queryParams: {
-        'page': _currentPage,
-        'size': _pageSize,
-      });
-      
+
+      final skins = await getAllSkins(
+        queryParams: {'page': _currentPage, 'size': _pageSize},
+      );
+
       setState(() {
         _displayedSkins.addAll(skins);
         _isLoading = false;
@@ -138,9 +133,10 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
               _buildCategoryList(),
               const SizedBox(height: AppSpacing.medium),
               Expanded(
-                child: _isLoading && _displayedSkins.isEmpty
-                    ? const Center(child: CircularProgressIndicator())
-                    : _displayedSkins.isEmpty
+                child:
+                    _isLoading && _displayedSkins.isEmpty
+                        ? const Center(child: CircularProgressIndicator())
+                        : _displayedSkins.isEmpty
                         ? const Center(child: Text('No skins found'))
                         : _buildSkinsList(),
               ),
@@ -165,7 +161,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
             ),
           );
         }
-        
+
         final skin = _displayedSkins[index];
         return _buildSkinCard(skin);
       },
@@ -235,7 +231,8 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
               child: Text(
                 category,
                 style: AppTypography.bodySmall.copyWith(
-                  color: isActive ? AppColors.background : AppColors.textSecondary,
+                  color:
+                      isActive ? AppColors.background : AppColors.textSecondary,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -280,9 +277,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
-                        return const Center(
-                          child: CircularProgressIndicator(),
-                        );
+                        return const Center(child: CircularProgressIndicator());
                       },
                       errorBuilder: (context, error, stackTrace) {
                         return Image.asset(
@@ -294,7 +289,9 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                     Align(
                       alignment: Alignment.bottomCenter,
                       child: Container(
-                        color: AppColors.cardBackground.withAlpha((0.7 * 255).round()),
+                        color: AppColors.cardBackground.withAlpha(
+                          (0.7 * 255).round(),
+                        ),
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         width: double.infinity,
                         child: Text(
@@ -356,7 +353,13 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                 const SizedBox(height: AppSpacing.small),
                 SizedBox(
                   width: double.infinity,
-                  child: _buildDownloadButton(skin, skinId, progress, isDownloading, isComplete),
+                  child: _buildDownloadButton(
+                    skin,
+                    skinId,
+                    progress,
+                    isDownloading,
+                    isComplete,
+                  ),
                 ),
               ],
             ),
@@ -380,9 +383,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
           backgroundColor: Colors.green,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 10),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
         child: const Row(
           mainAxisSize: MainAxisSize.min,
@@ -391,10 +392,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
             SizedBox(width: 8),
             Text(
               'INSTALLED',
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
             ),
           ],
         ),
@@ -429,45 +427,49 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     }
 
     return ElevatedButton(
-      onPressed: downloadProgress.containsKey(skinId) && downloadProgress[skinId]! > 0
-          ? null // Disable jika sudah mulai download
-          : () async {
-              setState(() {
-                downloadProgress[skinId] = 0.01; // Tandai mulai download
-              });
+      onPressed:
+          downloadProgress.containsKey(skinId) && downloadProgress[skinId]! > 0
+              ? null
+              : () async {
+                setState(() {
+                  downloadProgress[skinId] = 0.01;
+                });
 
-              final fileName = skin['hero'];
-              final fileUrl = skin['config'];
+                final fileName = skin['hero'];
+                final fileUrl = skin['config'];
 
-              try {
-                await DownloadHelper.downloadAndExtractZip(
-                  fileUrl,
-                  '$fileName',
-                  onProgress: (progress) {
+                try {
+                  await DownloadHelper.downloadAndExtractZip(
+                    fileUrl,
+                    '$fileName',
+                    onProgress: (progress) {
+                      if (mounted) {
+                        setState(() {
+                          downloadProgress[skinId] = progress;
+                        });
+                      }
+                    },
+                  );
+
+                  if (mounted) {
                     setState(() {
-                      downloadProgress[skinId] = progress;
+                      downloadProgress[skinId] = 1.0;
                     });
-                  },
-                );
-
-                setState(() {
-                  downloadProgress[skinId] = 1.0;
-                });
-              } catch (e) {
-               _snackBarAction('Download error: $e'); 
-                setState(() {
-                  downloadProgress.remove(skinId);
-                });
-               _snackBarAction('Failed to download skin: $e');
-              }
-            },
+                  }
+                } catch (e) {
+                  if (mounted) {
+                    _snackBarAction('Download error: $e');
+                    setState(() {
+                      downloadProgress.remove(skinId);
+                    });
+                  }
+                }
+              },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.accent,
         foregroundColor: Colors.white,
         padding: const EdgeInsets.symmetric(vertical: 10),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       ),
       child: const Row(
         mainAxisSize: MainAxisSize.min,
@@ -476,10 +478,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
           SizedBox(width: 8),
           Text(
             'DOWNLOAD',
-            style: TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
-            ),
+            style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold),
           ),
         ],
       ),
