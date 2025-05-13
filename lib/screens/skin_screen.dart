@@ -1,6 +1,7 @@
 import 'package:lynxgaming/helpers/download_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:lynxgaming/constant/theme.dart';
+import 'package:lynxgaming/helpers/message_helper.dart';
 import 'package:lynxgaming/services/skins_services.dart';
 
 class SkinUnlockerScreen extends StatefulWidget {
@@ -10,52 +11,109 @@ class SkinUnlockerScreen extends StatefulWidget {
   State<SkinUnlockerScreen> createState() => _SkinUnlockerScreenState();
 }
 
-
 class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
   String searchQuery = '';
   String selectedCategory = 'All';
   final Map<String, double> downloadProgress = {};
+  
+  final int _pageSize = 5;
+  int _currentPage = 1;
+  bool _isLoading = false;
+  bool _hasMoreData = true;
+  final ScrollController _scrollController = ScrollController();
 
   final List<String> categories = [
     'All',
-    'Normal',
-    'Elite',
-    'Special',
+    'Events',
     'Epic',
     'Legend',
     'Mythic',
   ];
 
-  List<Map<String, dynamic>>? _skins;
-
-  List<Map<String, dynamic>> get filteredSkins {
-    final skins = _skins ?? [];
-    return skins.where((skin) {
-      final name = (skin['nama'] ?? '').toString().toLowerCase();
-      final hero = (skin['hero'] ?? '').toString().toLowerCase();
-      final category = (skin['tag'] ?? '').toString();
-      return (name.contains(searchQuery.toLowerCase()) ||
-              hero.contains(searchQuery.toLowerCase())) &&
-          (selectedCategory == 'All' || category == selectedCategory);
-    }).toList();
+  List<Map<String, dynamic>> _displayedSkins = [];
+  Future<void> _applyFilters() async {
+    setState(() {
+      _isLoading = true;
+      _currentPage = 1;
+      _displayedSkins = [];
+    });
+    
+    final skins = await getAllSkins(queryParams: {
+      'page': _currentPage,
+      'size': _pageSize,
+      'search': searchQuery.isNotEmpty ? searchQuery : null,
+      'tag': selectedCategory != 'All' ? selectedCategory : null,
+    });
+    
+    setState(() {
+      _displayedSkins = skins;
+      _isLoading = false;
+      _hasMoreData = skins.length >= _pageSize;
+    });
   }
 
   @override
   void initState() {
     super.initState();
     _loadSkins();
+    _scrollController.addListener(_scrollListener);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_scrollListener);
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _scrollListener() {
+    if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+      _loadMoreSkins();
+    }
+  }
+
+  Future<void> _snackBarAction(message) async {
+    if (!mounted) return;
+   SnackBarHelper.showMessage(context, message);
   }
 
   Future<void> _loadSkins() async {
-    final skins = await getAllSkins();
     setState(() {
-      _skins = skins;
+      _isLoading = true;
+      _currentPage = 1;
+      _displayedSkins = [];
+    });
+    
+    final skins = await getAllSkins(queryParams: {
+      'page': _currentPage,
+      'size': _pageSize,
+    });
+    
+    setState(() {
+      _displayedSkins = skins;
+      _isLoading = false;
+      _hasMoreData = skins.length >= _pageSize;
     });
   }
 
-  void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
+  Future<void> _loadMoreSkins() async {
+    if (!_isLoading && _hasMoreData) {
+      setState(() {
+        _isLoading = true;
+        _currentPage++;
+      });
+      
+      final skins = await getAllSkins(queryParams: {
+        'page': _currentPage,
+        'size': _pageSize,
+      });
+      
+      setState(() {
+        _displayedSkins.addAll(skins);
+        _isLoading = false;
+        _hasMoreData = skins.length >= _pageSize;
+      });
+    }
   }
 
   @override
@@ -80,23 +138,38 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
               _buildCategoryList(),
               const SizedBox(height: AppSpacing.medium),
               Expanded(
-                child: _skins == null
+                child: _isLoading && _displayedSkins.isEmpty
                     ? const Center(child: CircularProgressIndicator())
-                    : filteredSkins.isEmpty
+                    : _displayedSkins.isEmpty
                         ? const Center(child: Text('No skins found'))
-                        : ListView.builder(
-                            itemCount: filteredSkins.length,
-                            itemBuilder: (context, index) {
-                              final skin = filteredSkins[index];
-                              return _buildSkinCard(skin);
-                            },
-                            padding: const EdgeInsets.only(bottom: AppSpacing.large),
-                          ),
+                        : _buildSkinsList(),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildSkinsList() {
+    return ListView.builder(
+      controller: _scrollController,
+      itemCount: _displayedSkins.length + (_hasMoreData ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index >= _displayedSkins.length) {
+          // This is the loading indicator at the bottom
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(AppSpacing.medium),
+              child: CircularProgressIndicator(),
+            ),
+          );
+        }
+        
+        final skin = _displayedSkins[index];
+        return _buildSkinCard(skin);
+      },
+      padding: const EdgeInsets.only(bottom: AppSpacing.large),
     );
   }
 
@@ -119,7 +192,12 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                 hintStyle: TextStyle(color: AppColors.textSecondary),
                 border: InputBorder.none,
               ),
-              onChanged: (value) => setState(() => searchQuery = value),
+              onChanged: (value) {
+                setState(() {
+                  searchQuery = value;
+                });
+                _applyFilters();
+              },
             ),
           ),
         ],
@@ -138,7 +216,12 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
           final category = categories[index];
           final isActive = selectedCategory == category;
           return GestureDetector(
-            onTap: () => setState(() => selectedCategory = category),
+            onTap: () {
+              setState(() {
+                selectedCategory = category;
+              });
+              _applyFilters();
+            },
             child: Container(
               padding: const EdgeInsets.symmetric(
                 horizontal: AppSpacing.medium,
@@ -211,7 +294,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                     Align(
                       alignment: Alignment.bottomCenter,
                       child: Container(
-                        color: AppColors.cardBackground.withOpacity(0.7),
+                        color: AppColors.cardBackground.withAlpha((0.7 * 255).round()),
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         width: double.infinity,
                         child: Text(
@@ -346,40 +429,38 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     }
 
     return ElevatedButton(
-     onPressed: downloadProgress.containsKey(skinId) && downloadProgress[skinId]! > 0
-    ? null // Disable jika sudah mulai download
-    : () async {
-        setState(() {
-          downloadProgress[skinId] = 0.01; // Tandai mulai download
-        });
-
-        final fileName = skin['hero'];
-        final fileUrl = skin['config'];
-
-        try {
-          await DownloadHelper.downloadAndExtractZip(
-            fileUrl,
-            '$fileName',
-            onProgress: (progress) {
+      onPressed: downloadProgress.containsKey(skinId) && downloadProgress[skinId]! > 0
+          ? null // Disable jika sudah mulai download
+          : () async {
               setState(() {
-                downloadProgress[skinId] = progress;
+                downloadProgress[skinId] = 0.01; // Tandai mulai download
               });
-            },
-          );
 
-          setState(() {
-            downloadProgress[skinId] = 1.0;
-          });
-        } catch (e) {
-          _showMessage('Download error: $e');
-          setState(() {
-            downloadProgress.remove(skinId); // Hapus jika gagal
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Failed to download skin: $e')),
-          );
-        }
-      },
+              final fileName = skin['hero'];
+              final fileUrl = skin['config'];
+
+              try {
+                await DownloadHelper.downloadAndExtractZip(
+                  fileUrl,
+                  '$fileName',
+                  onProgress: (progress) {
+                    setState(() {
+                      downloadProgress[skinId] = progress;
+                    });
+                  },
+                );
+
+                setState(() {
+                  downloadProgress[skinId] = 1.0;
+                });
+              } catch (e) {
+               _snackBarAction('Download error: $e'); 
+                setState(() {
+                  downloadProgress.remove(skinId);
+                });
+               _snackBarAction('Failed to download skin: $e');
+              }
+            },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.accent,
         foregroundColor: Colors.white,

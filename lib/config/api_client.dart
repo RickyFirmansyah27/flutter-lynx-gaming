@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:lynxgaming/helpers/logger.dart';
 
 class ApiClient {
   static const String _baseUrl = 'https://golang-lynx-gaming.vercel.app';
@@ -20,6 +21,7 @@ class ApiClient {
 
     try {
       http.Response response;
+      logger.d('$method $uri | Headers: $defaultHeaders| Query: $params | Body: $data');
 
       switch (method.toUpperCase()) {
         case 'GET':
@@ -52,13 +54,14 @@ class ApiClient {
           throw Exception('Metode HTTP tidak didukung: $method');
       }
 
-      if (response.statusCode >= 200 && response.statusCode < 300) {
-        return response;
-      } else {
-        throw Exception('Gagal memuat data: ${response.statusCode} - ${response.body}');
+      logger.i('Response: ${response.statusCode} | Body: ${response.body}');
+      if(response.body.isEmpty) {
+        logger.i('Response Body: ${jsonDecode(response.body)}');
       }
+
+      return response;
     } catch (e) {
-      throw Exception('Gagal melakukan request: $e');
+      throw Exception('Terjadi kesalahan saat melakukan permintaan: $e');
     }
   }
 

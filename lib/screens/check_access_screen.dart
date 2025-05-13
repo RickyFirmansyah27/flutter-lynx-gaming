@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:lynxgaming/helpers/storage_helper.dart';
+import 'package:lynxgaming/helpers/message_helper.dart';
 
 class AndroidDataAccessScreen extends StatefulWidget {
   const AndroidDataAccessScreen({super.key});
@@ -57,6 +58,11 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
     }
   }
 
+  Future<void> _snackBarAction(message) async {
+    if (!mounted) return;
+    SnackBarHelper.showMessage(context, message);
+  }
+
   Future<void> _requestStoragePermission() async {
     final deviceInfo = DeviceInfoPlugin();
     final androidInfo = await deviceInfo.androidInfo;
@@ -73,7 +79,8 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
         );
       });
       if (!hasAccess) {
-        _showMessage("Izin ditolak. Mohon aktifkan manual di pengaturan");
+        if (!mounted) return;
+        _snackBarAction("Izin ditolak. Mohon aktifkan manual di pengaturan");
         await openAppSettings();
       }
     } else {
@@ -98,18 +105,18 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
           );
 
           await intent.launch();
-          _showMessage('Silakan aktifkan "Allow access to manage all files"');
+          _snackBarAction('Silakan aktifkan "Allow access to manage all files"');
 
           // Cek ulang izin setelah beberapa detik
           await Future.delayed(const Duration(seconds: 5));
           await _checkAccess();
         }
       } catch (e) {
-        _showMessage('Gagal membuka settings: $e');
+        _snackBarAction('Gagal membuka settings: $e');
         try {
           await openAppSettings();
         } catch (e2) {
-          _showMessage('Mohon buka settings dan berikan izin penyimpanan secara manual');
+          _snackBarAction('Mohon buka settings dan berikan izin penyimpanan secara manual');
         }
       }
     }
@@ -137,7 +144,7 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
       await Future.delayed(const Duration(seconds: 3));
       await _checkAccess();
     } catch (e) {
-      _showMessage('Gagal membuka SAF: $e');
+      _snackBarAction('Gagal membuka SAF: $e');
     }
   }
 
@@ -146,21 +153,16 @@ class _AndroidDataAccessScreenState extends State<AndroidDataAccessScreen> {
       // Coba tulis file test di internal storage
       final appDir = await getExternalStorageDirectory();
       if (appDir == null) {
-        _showMessage('Tidak dapat menemukan external storage directory');
+        _snackBarAction('Tidak dapat menemukan external storage directory');
         return;
       }
 
       final testFile = File('${appDir.path}/test_write.txt');
       await testFile.writeAsString('Test akses tulis: ${DateTime.now()}');
-      _showMessage('Dapat menulis file di folder aplikasi');
+      _snackBarAction('Dapat menulis file di folder aplikasi');
     } catch (e) {
-      _showMessage('Gagal menulis file di folder aplikasi: $e');
+      _snackBarAction('Gagal menulis file di folder aplikasi: $e');
     }
-  }
-
-  void _showMessage(String message) {
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message)));
   }
 
   @override

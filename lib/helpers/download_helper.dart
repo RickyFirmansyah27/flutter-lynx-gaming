@@ -1,10 +1,9 @@
-// ignore_for_file: avoid_print
-
 import 'package:dio/dio.dart';
 import 'package:path_provider/path_provider.dart';
 import 'dart:io';
 import 'package:archive/archive.dart';
 import 'package:archive/archive_io.dart';
+import 'package:lynxgaming/helpers/logger.dart';
 
 class DownloadHelper {
   static final Dio _dio = Dio();
@@ -47,7 +46,7 @@ class DownloadHelper {
 
       return await file.exists() ? path : null;
     } catch (e) {
-      print('Download error: $e');
+      logger.e('Download error: $e');
       return null;
     }
   }
@@ -68,7 +67,7 @@ class DownloadHelper {
       }
       return true;
     } catch (e) {
-      print('Extract error: $e');
+      logger.e('Extract error: $e');
       return false;
     }
   }
