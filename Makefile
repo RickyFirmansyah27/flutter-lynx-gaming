@@ -13,7 +13,7 @@ clean:
 	flutter clean
 
 run:
-	flutter run
+	flutter run --enable-software-rendering
 
 test:
 	flutter run --debug
