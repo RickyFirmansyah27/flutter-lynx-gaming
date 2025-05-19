@@ -15,7 +15,7 @@ Future<List<Map<String, dynamic>>> authLogin({
     logger.d('Login API response: $response');
     final auth = generateAuthResponse(response);
 
-    return auth;
+    return [auth];
   } catch (e, stackTrace) {
    
     logger.e(

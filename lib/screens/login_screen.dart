@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:lynxgaming/helpers/logger.dart';
+import 'package:lynxgaming/services/auth_service.dart';
 import 'package:lynxgaming/constant/theme.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -14,18 +16,40 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _passwordController = TextEditingController();
   String? error;
 
-  void handleLogin() {
+  Future<void> handleLogin() async {
     final gameId = _gameIdController.text.trim();
     final serverId = _serverIdController.text.trim();
     final password = _passwordController.text;
+    final userAuthState = {};
 
     if (gameId.isEmpty || serverId.isEmpty || password.isEmpty) {
       setState(() => error = 'Please fill in all fields');
       return;
     }
 
-    // Navigate to main screen
-    Navigator.pushReplacementNamed(context, '/tabs');
+    final payload = {
+      'gameId': gameId,
+      'serverId': serverId,
+      'password': password,
+    };
+
+    try {
+      final response = await authLogin(bodyRequest: payload);
+
+      if (response.isEmpty) {
+        setState(() => error = 'Invalid response from server');
+        return;
+      }
+
+      userAuthState['user'] = response[0]['user'];
+      userAuthState['token'] = response[0]['token'];
+
+      // ignore: use_build_context_synchronously
+      Navigator.pushReplacementNamed(context, '/tabs');
+    } catch (e) {
+      logger.e('Login error: $e');
+      setState(() => error = 'Login failed. Please try again.');
+    }
   }
 
   @override
@@ -47,10 +71,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   // ignore: deprecated_member_use
                   color: Colors.black.withOpacity(0.6),
                   child: Center(
-                    child: Text(
-                      'LYNX GAMING',
-                      style: AppTypography.titleLarge,
-                    ),
+                    child: Text('LYNX GAMING', style: AppTypography.titleLarge),
                   ),
                 ),
               ],
@@ -83,8 +104,16 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                     const SizedBox(height: AppSpacing.large),
-                    _buildInputField('GAME ID', _gameIdController, 'Enter your Game ID'),
-                    _buildInputField('SERVER ID', _serverIdController, 'Enter your Server ID'),
+                    _buildInputField(
+                      'GAME ID',
+                      _gameIdController,
+                      'Enter your Game ID',
+                    ),
+                    _buildInputField(
+                      'SERVER ID',
+                      _serverIdController,
+                      'Enter your Server ID',
+                    ),
                     _buildInputField(
                       'PASSWORD',
                       _passwordController,
@@ -97,7 +126,9 @@ class _LoginScreenState extends State<LoginScreen> {
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.accent,
-                          padding: const EdgeInsets.symmetric(vertical: AppSpacing.medium),
+                          padding: const EdgeInsets.symmetric(
+                            vertical: AppSpacing.medium,
+                          ),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
@@ -115,7 +146,8 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: AppTypography.bodySmall,
                         ),
                         GestureDetector(
-                          onTap: () => Navigator.pushNamed(context, '/register'),
+                          onTap:
+                              () => Navigator.pushNamed(context, '/register'),
                           child: Text(
                             'Register',
                             style: AppTypography.bodySmall.copyWith(
@@ -125,7 +157,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
                       ],
-                    )
+                    ),
                   ],
                 ),
               ),
@@ -136,7 +168,12 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
-  Widget _buildInputField(String label, TextEditingController controller, String hint, {bool obscureText = false}) {
+  Widget _buildInputField(
+    String label,
+    TextEditingController controller,
+    String hint, {
+    bool obscureText = false,
+  }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.medium),
       child: Column(
