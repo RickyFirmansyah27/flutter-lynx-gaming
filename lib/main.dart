@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lynxgaming/constant/theme.dart';
+import 'package:lynxgaming/screens/layout.dart';
+import 'package:lynxgaming/screens/login_screen.dart';
 import 'package:lynxgaming/screens/onboarding_screen.dart';
 
 void main() {
@@ -36,7 +38,12 @@ class LynxApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Rajdhani',
       ),
-      home: OnboardingScreen(),
+      initialRoute: '/',
+      routes: {
+        '/login': (context) => const LoginScreen(),
+        '/tabs': (context) => const TabsScreen(),
+        '/': (context) => const OnboardingScreen(),
+      },
     );
   }
 }

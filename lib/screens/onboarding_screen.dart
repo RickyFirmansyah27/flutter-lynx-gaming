@@ -5,7 +5,6 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:lynxgaming/helpers/storage_helper.dart';
 import 'package:lynxgaming/helpers/message_helper.dart';
-import 'package:lynxgaming/screens/layout.dart';
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -239,12 +238,8 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                         final latestAccess = await StorageHelper.checkStoragePermission(isAndroid11OrAbove: _isAndroid11OrAbove);
                         if (latestAccess) {
                           if (!mounted) return;
-                          Navigator.push(
-                            // ignore: use_build_context_synchronously
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const TabsScreen(),
-                            ),
+                           // ignore: use_build_context_synchronously
+                           Navigator.pushReplacementNamed(context, '/login'
                           );
                         } else {
                           _snackBarAction("Akses penyimpanan diperlukan untuk lanjut.");
