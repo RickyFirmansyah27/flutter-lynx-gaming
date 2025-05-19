@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lynxgaming/constant/theme.dart';
 
-import 'check_access_screen.dart';
+import 'arena_screen.dart';
 import 'vpn_screen.dart';
 import 'skin_screen.dart';
 
@@ -18,7 +18,7 @@ class _TabsScreenState extends State<TabsScreen> {
   int _currentIndex = 0;
 
   final List<Widget> _pages = const [
-    AndroidDataAccessScreen(),
+    ArenaUnlockerScreen(),
     SkinUnlockerScreen(),
     VpnScreen(),
   ];
@@ -43,8 +43,8 @@ class _TabsScreenState extends State<TabsScreen> {
         onTap: (index) => setState(() => _currentIndex = index),
         items: const [
           BottomNavigationBarItem(
-            icon: Icon(CupertinoIcons.folder),
-            label: 'TEST',
+            icon: Icon(CupertinoIcons.perspective),
+            label: 'ARENAS',
           ),
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.flame),

@@ -19,8 +19,10 @@ test:
 	flutter run --debug
 
 release:
-	flutter build apk --release --target-platform=$(PLATFORMS)
+	flutter build apk --split-per-abi
 
+build-debug:
+	flutter build apk --release --target-platform=$(PLATFORMS)
 
 ## Tampilkan bantuan
 help:

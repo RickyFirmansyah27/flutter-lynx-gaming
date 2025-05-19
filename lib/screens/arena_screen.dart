@@ -2,16 +2,16 @@ import 'package:lynxgaming/helpers/download_helper.dart';
 import 'package:flutter/material.dart';
 import 'package:lynxgaming/constant/theme.dart';
 import 'package:lynxgaming/helpers/message_helper.dart';
-import 'package:lynxgaming/services/skins_services.dart';
+import 'package:lynxgaming/services/arenas_services.dart';
 
-class SkinUnlockerScreen extends StatefulWidget {
-  const SkinUnlockerScreen({super.key});
+class ArenaUnlockerScreen extends StatefulWidget {
+  const ArenaUnlockerScreen({super.key});
 
   @override
-  State<SkinUnlockerScreen> createState() => _SkinUnlockerScreenState();
+  State<ArenaUnlockerScreen> createState() => _ArenaUnlockerScreenState();
 }
 
-class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
+class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
   String searchQuery = '';
   String selectedCategory = 'All';
   final Map<String, double> downloadProgress = {};
@@ -22,17 +22,17 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
   bool _hasMoreData = true;
   final ScrollController _scrollController = ScrollController();
 
-  final List<String> categories = ['All', 'Events', 'Epic', 'Legend', 'Mythic'];
+  final List<String> categories = ['All', 'Custom', 'Event', 'Internal'];
 
-  List<Map<String, dynamic>> _displayedSkins = [];
+  List<Map<String, dynamic>> _displayedarenas = [];
   Future<void> _applyFilters() async {
     setState(() {
       _isLoading = true;
       _currentPage = 1;
-      _displayedSkins = [];
+      _displayedarenas = [];
     });
 
-    final skins = await getAllSkins(
+    final arenas = await getAllArenas(
       queryParams: {
         'page': _currentPage,
         'size': _pageSize,
@@ -42,16 +42,16 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     );
 
     setState(() {
-      _displayedSkins = skins;
+      _displayedarenas = arenas;
       _isLoading = false;
-      _hasMoreData = skins.length >= _pageSize;
+      _hasMoreData = arenas.length >= _pageSize;
     });
   }
 
   @override
   void initState() {
     super.initState();
-    _loadSkins();
+    _loadarenas();
     _scrollController.addListener(_scrollListener);
   }
 
@@ -65,7 +65,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
   void _scrollListener() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      _loadMoreSkins();
+      _loadMorearenas();
     }
   }
 
@@ -74,39 +74,39 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     SnackBarHelper.showMessage(context, message);
   }
 
-  Future<void> _loadSkins() async {
+  Future<void> _loadarenas() async {
     setState(() {
       _isLoading = true;
       _currentPage = 1;
-      _displayedSkins = [];
+      _displayedarenas = [];
     });
 
-    final skins = await getAllSkins(
+    final arenas = await getAllArenas(
       queryParams: {'page': _currentPage, 'size': _pageSize},
     );
 
     setState(() {
-      _displayedSkins = skins;
+      _displayedarenas = arenas;
       _isLoading = false;
-      _hasMoreData = skins.length >= _pageSize;
+      _hasMoreData = arenas.length >= _pageSize;
     });
   }
 
-  Future<void> _loadMoreSkins() async {
+  Future<void> _loadMorearenas() async {
     if (!_isLoading && _hasMoreData) {
       setState(() {
         _isLoading = true;
         _currentPage++;
       });
 
-      final skins = await getAllSkins(
+      final arenas = await getAllArenas(
         queryParams: {'page': _currentPage, 'size': _pageSize},
       );
 
       setState(() {
-        _displayedSkins.addAll(skins);
+        _displayedarenas.addAll(arenas);
         _isLoading = false;
-        _hasMoreData = skins.length >= _pageSize;
+        _hasMoreData = arenas.length >= _pageSize;
       });
     }
   }
@@ -121,10 +121,10 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('SKIN UNLOCKER', style: AppTypography.titleSmall),
+              Text('ARENA UNLOCKER', style: AppTypography.titleSmall),
               const SizedBox(height: 4),
               Text(
-                'Unlock and customize your favorite heroes',
+                'Unlock and customize your favorite arenas',
                 style: AppTypography.caption,
               ),
               const SizedBox(height: AppSpacing.medium),
@@ -134,11 +134,11 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
               const SizedBox(height: AppSpacing.medium),
               Expanded(
                 child:
-                    _isLoading && _displayedSkins.isEmpty
+                    _isLoading && _displayedarenas.isEmpty
                         ? const Center(child: CircularProgressIndicator())
-                        : _displayedSkins.isEmpty
-                        ? const Center(child: Text('No skins found'))
-                        : _buildSkinsList(),
+                        : _displayedarenas.isEmpty
+                        ? const Center(child: Text('No arenas found'))
+                        : _buildarenasList(),
               ),
             ],
           ),
@@ -147,12 +147,12 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     );
   }
 
-  Widget _buildSkinsList() {
+  Widget _buildarenasList() {
     return ListView.builder(
       controller: _scrollController,
-      itemCount: _displayedSkins.length + (_hasMoreData ? 1 : 0),
+      itemCount: _displayedarenas.length + (_hasMoreData ? 1 : 0),
       itemBuilder: (context, index) {
-        if (index >= _displayedSkins.length) {
+        if (index >= _displayedarenas.length) {
           // This is the loading indicator at the bottom
           return const Center(
             child: Padding(
@@ -162,8 +162,8 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
           );
         }
 
-        final skin = _displayedSkins[index];
-        return _buildSkinCard(skin);
+        final arena = _displayedarenas[index];
+        return _buildarenaCard(arena);
       },
       padding: const EdgeInsets.only(bottom: AppSpacing.large),
     );
@@ -184,7 +184,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
             child: TextField(
               style: AppTypography.bodyMedium,
               decoration: const InputDecoration(
-                hintText: 'Search skins or heroes...',
+                hintText: 'Search arenas...',
                 hintStyle: TextStyle(color: AppColors.textSecondary),
                 border: InputBorder.none,
               ),
@@ -244,9 +244,9 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
     );
   }
 
-  Widget _buildSkinCard(Map<String, dynamic> skin) {
-    final skinId = skin['id']?.toString() ?? skin['nama'];
-    final progress = downloadProgress[skinId] ?? 0.0;
+  Widget _buildarenaCard(Map<String, dynamic> arena) {
+    final arenaId = arena['id']?.toString() ?? arena['nama'];
+    final progress = downloadProgress[arenaId] ?? 0.0;
     final isDownloading = progress > 0 && progress < 1;
     final isComplete = progress >= 1;
 
@@ -273,7 +273,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                   fit: StackFit.expand,
                   children: [
                     Image.network(
-                      skin['image_url'] ?? '',
+                      arena['image_url'] ?? '',
                       fit: BoxFit.cover,
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
@@ -295,7 +295,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                         padding: const EdgeInsets.symmetric(vertical: 4),
                         width: double.infinity,
                         child: Text(
-                          skin['hero'] ?? '',
+                          arena['hero'] ?? '',
                           textAlign: TextAlign.center,
                           style: AppTypography.bodySmall.copyWith(
                             color: AppColors.textPrimary,
@@ -314,7 +314,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  skin['nama'] ?? '',
+                  arena['nama'] ?? '',
                   style: AppTypography.titleSmall.copyWith(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
@@ -322,7 +322,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  skin['desc'] ?? 'No description available',
+                  arena['desc'] ?? 'No description available',
                   style: AppTypography.bodySmall.copyWith(
                     color: AppColors.textSecondary,
                     fontSize: 12,
@@ -335,14 +335,14 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      skin['tag'] ?? '',
+                      arena['tag'] ?? '',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.secondary,
                         fontSize: 12,
                       ),
                     ),
                     Text(
-                      skin['size'] ?? '',
+                      arena['size'] ?? '',
                       style: AppTypography.bodySmall.copyWith(
                         color: AppColors.textSecondary,
                         fontSize: 12,
@@ -354,8 +354,8 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: _buildDownloadButton(
-                    skin,
-                    skinId,
+                    arena,
+                    arenaId,
                     progress,
                     isDownloading,
                     isComplete,
@@ -370,8 +370,8 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
   }
 
   Widget _buildDownloadButton(
-    Map<String, dynamic> skin,
-    String skinId,
+    Map<String, dynamic> arena,
+    String arenaId,
     double progress,
     bool isDownloading,
     bool isComplete,
@@ -428,15 +428,15 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
 
     return ElevatedButton(
       onPressed:
-          downloadProgress.containsKey(skinId) && downloadProgress[skinId]! > 0
+          downloadProgress.containsKey(arenaId) && downloadProgress[arenaId]! > 0
               ? null
               : () async {
                 setState(() {
-                  downloadProgress[skinId] = 0.01;
+                  downloadProgress[arenaId] = 0.01;
                 });
 
-                final fileName = skin['hero'];
-                final fileUrl = skin['config'];
+                final fileName = arena['nama'];
+                final fileUrl = arena['config'];
 
                 try {
                   await DownloadHelper.downloadAndExtractZip(
@@ -445,7 +445,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
                     onProgress: (progress) {
                       if (mounted) {
                         setState(() {
-                          downloadProgress[skinId] = progress;
+                          downloadProgress[arenaId] = progress;
                         });
                       }
                     },
@@ -453,14 +453,14 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
 
                   if (mounted) {
                     setState(() {
-                      downloadProgress[skinId] = 1.0;
+                      downloadProgress[arenaId] = 1.0;
                     });
                   }
                 } catch (e) {
                   if (mounted) {
                     _snackBarAction('Download error: $e');
                     setState(() {
-                      downloadProgress.remove(skinId);
+                      downloadProgress.remove(arenaId);
                     });
                   }
                 }

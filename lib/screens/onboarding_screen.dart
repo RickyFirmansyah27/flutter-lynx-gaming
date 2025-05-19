@@ -1,7 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:android_intent_plus/android_intent.dart';
+import 'package:android_intent_plus/flag.dart';
+import 'package:permission_handler/permission_handler.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'package:lynxgaming/helpers/storage_helper.dart';
+import 'package:lynxgaming/helpers/message_helper.dart';
 import 'package:lynxgaming/screens/layout.dart';
 
-class OnboardingScreen extends StatelessWidget {
+class OnboardingScreen extends StatefulWidget {
+  const OnboardingScreen({super.key});
+
+  @override
+  State<OnboardingScreen> createState() => _OnboardingScreenState();
+}
+
+class _OnboardingScreenState extends State<OnboardingScreen> {
+  bool _hasAccess = false;
+  bool _isAndroid11OrAbove = false;
+
   final List<Map<String, String>> featuredArenas = [
     {
       'id': '1',
@@ -41,7 +57,73 @@ class OnboardingScreen extends StatelessWidget {
     },
   ];
 
-  OnboardingScreen({super.key});
+  @override
+  void initState() {
+    super.initState();
+    _checkAccess();
+  }
+
+  Future<void> _checkAccess() async {
+    final deviceInfo = DeviceInfoPlugin();
+    final androidInfo = await deviceInfo.androidInfo;
+
+    _isAndroid11OrAbove = androidInfo.version.sdkInt >= 30;
+    final hasAccess = await StorageHelper.checkStoragePermission(isAndroid11OrAbove: _isAndroid11OrAbove);
+    setState(() {
+      _hasAccess = hasAccess;
+    });
+  }
+
+  Future<void> _snackBarAction(message) async {
+    if (!mounted) return;
+    SnackBarHelper.showMessage(context, message);
+  }
+
+  Future<void> _requestStoragePermission() async {
+    final deviceInfo = DeviceInfoPlugin();
+    final androidInfo = await deviceInfo.androidInfo;
+
+    if (!_isAndroid11OrAbove) {
+      final hasAccess = await StorageHelper.requestStoragePermission(isAndroid11OrAbove: false);
+      setState(() {
+        _hasAccess = hasAccess;
+      });
+      if (!hasAccess) {
+        if (!mounted) return;
+        _snackBarAction("Izin ditolak. Mohon aktifkan manual di pengaturan");
+        await openAppSettings();
+      }
+    } else {
+      try {
+        final hasAccess = await StorageHelper.requestStoragePermission(isAndroid11OrAbove: true);
+        setState(() {
+          _hasAccess = hasAccess;
+        });
+
+        if (!hasAccess) {
+          final intent = AndroidIntent(
+            action: 'android.settings.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION',
+            data: 'package:${androidInfo.packageName}',
+            flags: <int>[Flag.FLAG_ACTIVITY_NEW_TASK],
+          );
+
+          await intent.launch();
+          _snackBarAction('Silakan aktifkan "Allow access to manage all files"');
+          await Future.delayed(const Duration(seconds: 5));
+          await _checkAccess();
+        }
+      } catch (e) {
+        _snackBarAction('Gagal membuka settings: $e');
+        try {
+          await openAppSettings();
+        } catch (e2) {
+          _snackBarAction('Mohon buka settings dan berikan izin penyimpanan secara manual');
+        }
+      }
+    }
+  }
+
+
 
   @override
   Widget build(BuildContext context) {
@@ -148,13 +230,25 @@ class OnboardingScreen extends StatelessWidget {
                           vertical: 12,
                         ),
                       ),
-                      onPressed: () {
-                       Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const TabsScreen(),
-                          ),
-                        );
+                      onPressed: () async {
+                        if (!_hasAccess) {
+                          await _requestStoragePermission();
+                        }
+
+                        // Cek ulang setelah permintaan
+                        final latestAccess = await StorageHelper.checkStoragePermission(isAndroid11OrAbove: _isAndroid11OrAbove);
+                        if (latestAccess) {
+                          if (!mounted) return;
+                          Navigator.push(
+                            // ignore: use_build_context_synchronously
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const TabsScreen(),
+                            ),
+                          );
+                        } else {
+                          _snackBarAction("Akses penyimpanan diperlukan untuk lanjut.");
+                        }
                       },
                       child: const Text('EXPLORE NOW'),
                     ),
@@ -309,4 +403,8 @@ class OnboardingScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+extension on AndroidDeviceInfo {
+  get packageName => null;
 }
