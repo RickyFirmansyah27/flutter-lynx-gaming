@@ -36,8 +36,8 @@ class _LoginScreenState extends State<LoginScreen> {
     try {
       final response = await authLogin(bodyRequest: payload);
 
-      if (response.isEmpty) {
-        setState(() => error = 'Invalid response from server');
+      if (response[0]['user'] == null || response[0]['token'] == null) {
+        setState(() => error = 'Login failed. Please try again.');
         return;
       }
 
