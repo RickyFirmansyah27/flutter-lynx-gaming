@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class StorageHelper {
   static const String _permissionKey = 'storage_permission_granted';
+  static const String _firstRunKey = 'is_first_run';
 
   static Future<bool> _isPermissionPermanentlyGranted() async {
     final prefs = await SharedPreferences.getInstance();
@@ -12,6 +13,16 @@ class StorageHelper {
   static Future<void> _setPermissionPermanentlyGranted(bool granted) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_permissionKey, granted);
+  }
+
+  static Future<bool> isFirstRun() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(_firstRunKey) ?? true;
+  }
+
+  static Future<void> setFirstRunComplete() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(_firstRunKey, false);
   }
 
   static Future<bool> checkStoragePermission({required bool isAndroid11OrAbove}) async {

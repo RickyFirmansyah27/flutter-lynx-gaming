@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lynxgaming/constant/theme.dart';
@@ -24,6 +25,7 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
   bool _isLoading = false;
   bool _hasMoreData = true;
   final ScrollController _scrollController = ScrollController();
+  Timer? _debounce;
 
   final List<String> categories = ['All', 'Custom', 'Event', 'Internal'];
 
@@ -49,6 +51,7 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
   }
 
   Future<void> _applyFilters() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _currentPage = 1;
@@ -64,11 +67,13 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
       },
     );
 
-    setState(() {
-      _displayedarenas = arenas;
-      _isLoading = false;
-      _hasMoreData = arenas.length >= _pageSize;
-    });
+    if (mounted) {
+      setState(() {
+        _displayedarenas = arenas;
+        _isLoading = false;
+        _hasMoreData = arenas.length >= _pageSize;
+      });
+    }
   }
 
   @override
@@ -80,6 +85,7 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _scrollController.removeListener(_scrollListener);
     _scrollController.dispose();
     super.dispose();
@@ -92,12 +98,13 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
     }
   }
 
-  Future<void> _snackBarAction(message) async {
+  Future<void> _snackBarAction(String message) async {
     if (!mounted) return;
     SnackBarHelper.showMessage(context, message);
   }
 
   Future<void> _loadarenas() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _currentPage = 1;
@@ -108,15 +115,17 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
       queryParams: {'page': _currentPage, 'size': _pageSize},
     );
 
-    setState(() {
-      _displayedarenas = arenas;
-      _isLoading = false;
-      _hasMoreData = arenas.length >= _pageSize;
-    });
+    if (mounted) {
+      setState(() {
+        _displayedarenas = arenas;
+        _isLoading = false;
+        _hasMoreData = arenas.length >= _pageSize;
+      });
+    }
   }
 
   Future<void> _loadMorearenas() async {
-    if (!_isLoading && _hasMoreData) {
+    if (!_isLoading && _hasMoreData && mounted) {
       setState(() {
         _isLoading = true;
         _currentPage++;
@@ -126,11 +135,13 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
         queryParams: {'page': _currentPage, 'size': _pageSize},
       );
 
-      setState(() {
-        _displayedarenas.addAll(arenas);
-        _isLoading = false;
-        _hasMoreData = arenas.length >= _pageSize;
-      });
+      if (mounted) {
+        setState(() {
+          _displayedarenas.addAll(arenas);
+          _isLoading = false;
+          _hasMoreData = arenas.length >= _pageSize;
+        });
+      }
     }
   }
 
@@ -153,14 +164,14 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
               const SizedBox(height: AppSpacing.medium),
               _buildSearchBar(),
               const SizedBox(height: AppSpacing.medium),
-              _buildCategoryList(), // Fixed typo: was "_build patsList()"
+              _buildCategoryList(),
               const SizedBox(height: AppSpacing.medium),
               Expanded(
                 child: _isLoading && _displayedarenas.isEmpty
                     ? const Center(child: CircularProgressIndicator())
                     : _displayedarenas.isEmpty
                         ? const Center(child: Text('No arenas found'))
-                        : _buildarenasList(), // Fixed typo: was "_build"
+                        : _buildarenasList(),
               ),
             ],
           ),
@@ -210,10 +221,15 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
                 border: InputBorder.none,
               ),
               onChanged: (value) {
-                setState(() {
-                  searchQuery = value;
-                });
-                _applyFilters();
+                if (mounted) {
+                  setState(() {
+                    searchQuery = value;
+                  });
+                  _debounce?.cancel();
+                  _debounce = Timer(const Duration(milliseconds: 500), () {
+                    _applyFilters();
+                  });
+                }
               },
             ),
           ),
@@ -234,10 +250,12 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
           final isActive = selectedCategory == category;
           return GestureDetector(
             onTap: () {
-              setState(() {
-                selectedCategory = category;
-              });
-              _applyFilters();
+              if (mounted) {
+                setState(() {
+                  selectedCategory = category;
+                });
+                _applyFilters();
+              }
             },
             child: Container(
               padding: const EdgeInsets.symmetric(
@@ -476,9 +494,11 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
                 }
               }
 
-              setState(() {
-                downloadProgress[arenaId] = 0.01;
-              });
+              if (mounted) {
+                setState(() {
+                  downloadProgress[arenaId] = 0.01;
+                });
+              }
 
               final fileName = arena['nama'];
               final fileUrl = arena['config'];
