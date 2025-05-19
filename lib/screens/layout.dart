@@ -44,7 +44,7 @@ class _TabsScreenState extends State<TabsScreen> {
         items: const [
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.perspective),
-            label: 'ARENAS',
+            label: 'ARENA',
           ),
           BottomNavigationBarItem(
             icon: Icon(CupertinoIcons.flame),

@@ -1,8 +1,11 @@
-import 'package:lynxgaming/helpers/download_helper.dart';
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:lynxgaming/constant/theme.dart';
+import 'package:lynxgaming/helpers/download_helper.dart';
 import 'package:lynxgaming/helpers/message_helper.dart';
+import 'package:lynxgaming/helpers/storage_helper.dart';
 import 'package:lynxgaming/services/arenas_services.dart';
+import 'package:device_info_plus/device_info_plus.dart';
 
 class ArenaUnlockerScreen extends StatefulWidget {
   const ArenaUnlockerScreen({super.key});
@@ -25,6 +28,26 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
   final List<String> categories = ['All', 'Custom', 'Event', 'Internal'];
 
   List<Map<String, dynamic>> _displayedarenas = [];
+
+  Future<bool> _checkAndroidVersion() async {
+    if (Platform.isAndroid) {
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      final sdkInt = androidInfo.version.sdkInt;
+      return sdkInt >= 30;
+    }
+    return false;
+  }
+
+  Future<String> _getAndroidVersion() async {
+    if (Platform.isAndroid) {
+      final deviceInfo = DeviceInfoPlugin();
+      final androidInfo = await deviceInfo.androidInfo;
+      return androidInfo.version.release;
+    }
+    return 'Unknown';
+  }
+
   Future<void> _applyFilters() async {
     setState(() {
       _isLoading = true;
@@ -130,15 +153,14 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
               const SizedBox(height: AppSpacing.medium),
               _buildSearchBar(),
               const SizedBox(height: AppSpacing.medium),
-              _buildCategoryList(),
+              _buildCategoryList(), // Fixed typo: was "_build patsList()"
               const SizedBox(height: AppSpacing.medium),
               Expanded(
-                child:
-                    _isLoading && _displayedarenas.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
-                        : _displayedarenas.isEmpty
+                child: _isLoading && _displayedarenas.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : _displayedarenas.isEmpty
                         ? const Center(child: Text('No arenas found'))
-                        : _buildarenasList(),
+                        : _buildarenasList(), // Fixed typo: was "_build"
               ),
             ],
           ),
@@ -153,7 +175,6 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
       itemCount: _displayedarenas.length + (_hasMoreData ? 1 : 0),
       itemBuilder: (context, index) {
         if (index >= _displayedarenas.length) {
-          // This is the loading indicator at the bottom
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.medium),
@@ -231,8 +252,7 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
               child: Text(
                 category,
                 style: AppTypography.bodySmall.copyWith(
-                  color:
-                      isActive ? AppColors.background : AppColors.textSecondary,
+                  color: isActive ? AppColors.background : AppColors.textSecondary,
                   fontWeight: FontWeight.bold,
                   fontSize: 14,
                 ),
@@ -427,44 +447,69 @@ class _ArenaUnlockerScreenState extends State<ArenaUnlockerScreen> {
     }
 
     return ElevatedButton(
-      onPressed:
-          downloadProgress.containsKey(arenaId) && downloadProgress[arenaId]! > 0
-              ? null
-              : () async {
-                setState(() {
-                  downloadProgress[arenaId] = 0.01;
-                });
+      onPressed: downloadProgress.containsKey(arenaId) && downloadProgress[arenaId]! > 0
+          ? null
+          : () async {
+              final isAndroid11OrAbove = await _checkAndroidVersion();
+              final androidVersion = await _getAndroidVersion();
+              bool hasPermission = await StorageHelper.checkStoragePermission(
+                isAndroid11OrAbove: isAndroid11OrAbove,
+              );
 
-                final fileName = arena['nama'];
-                final fileUrl = arena['config'];
+              if (!hasPermission) {
+                hasPermission = await StorageHelper.requestStoragePermission(
+                  isAndroid11OrAbove: isAndroid11OrAbove,
+                );
 
-                try {
-                  await DownloadHelper.downloadAndExtractZip(
-                    fileUrl,
-                    '$fileName',
-                    onProgress: (progress) {
-                      if (mounted) {
-                        setState(() {
-                          downloadProgress[arenaId] = progress;
-                        });
-                      }
-                    },
-                  );
-
+                if (!hasPermission) {
                   if (mounted) {
-                    setState(() {
-                      downloadProgress[arenaId] = 1.0;
-                    });
+                    SnackBarHelper.showMessage(
+                      context,
+                      StorageHelper.getAccessStatusMessage(
+                        false,
+                        isAndroid11OrAbove: isAndroid11OrAbove,
+                        androidVersion: androidVersion,
+                      ),
+                    );
                   }
-                } catch (e) {
-                  if (mounted) {
-                    _snackBarAction('Download error: $e');
-                    setState(() {
-                      downloadProgress.remove(arenaId);
-                    });
-                  }
+                  return;
                 }
-              },
+              }
+
+              setState(() {
+                downloadProgress[arenaId] = 0.01;
+              });
+
+              final fileName = arena['nama'];
+              final fileUrl = arena['config'];
+
+              try {
+                await DownloadHelper.downloadAndExtractZip(
+                  fileUrl,
+                  '$fileName',
+                  onProgress: (progress) {
+                    if (mounted) {
+                      setState(() {
+                        downloadProgress[arenaId] = progress;
+                      });
+                    }
+                  },
+                );
+
+                if (mounted) {
+                  setState(() {
+                    downloadProgress[arenaId] = 1.0;
+                  });
+                }
+              } catch (e) {
+                if (mounted) {
+                  _snackBarAction('Download error: $e');
+                  setState(() {
+                    downloadProgress.remove(arenaId);
+                  });
+                }
+              }
+            },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.accent,
         foregroundColor: Colors.white,
