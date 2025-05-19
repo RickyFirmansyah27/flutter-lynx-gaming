@@ -26,6 +26,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
 
   List<Map<String, dynamic>> _displayedSkins = [];
   Future<void> _applyFilters() async {
+    if (!mounted) return;
     setState(() {
       _isLoading = true;
       _currentPage = 1;
@@ -41,11 +42,13 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
       },
     );
 
-    setState(() {
-      _displayedSkins = skins;
-      _isLoading = false;
-      _hasMoreData = skins.length >= _pageSize;
-    });
+    if (mounted) { // Only update state if still mounted
+      setState(() {
+        _displayedSkins = skins;
+        _isLoading = false;
+        _hasMoreData = skins.length >= _pageSize;
+      });
+    }
   }
 
   @override
@@ -75,6 +78,7 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
   }
 
   Future<void> _loadSkins() async {
+    if (!mounted) return; // Prevent processing if disposed
     setState(() {
       _isLoading = true;
       _currentPage = 1;
@@ -85,15 +89,17 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
       queryParams: {'page': _currentPage, 'size': _pageSize},
     );
 
-    setState(() {
-      _displayedSkins = skins;
-      _isLoading = false;
-      _hasMoreData = skins.length >= _pageSize;
-    });
+    if (mounted) { // Only update state if still mounted
+      setState(() {
+        _displayedSkins = skins;
+        _isLoading = false;
+        _hasMoreData = skins.length >= _pageSize;
+      });
+    }
   }
 
   Future<void> _loadMoreSkins() async {
-    if (!_isLoading && _hasMoreData) {
+    if (!_isLoading && _hasMoreData && mounted) { // Check mounted before proceeding
       setState(() {
         _isLoading = true;
         _currentPage++;
@@ -103,11 +109,13 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
         queryParams: {'page': _currentPage, 'size': _pageSize},
       );
 
-      setState(() {
-        _displayedSkins.addAll(skins);
-        _isLoading = false;
-        _hasMoreData = skins.length >= _pageSize;
-      });
+      if (mounted) { // Only update state if still mounted
+        setState(() {
+          _displayedSkins.addAll(skins);
+          _isLoading = false;
+          _hasMoreData = skins.length >= _pageSize;
+        });
+      }
     }
   }
 
@@ -133,10 +141,9 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
               _buildCategoryList(),
               const SizedBox(height: AppSpacing.medium),
               Expanded(
-                child:
-                    _isLoading && _displayedSkins.isEmpty
-                        ? const Center(child: CircularProgressIndicator())
-                        : _displayedSkins.isEmpty
+                child: _isLoading && _displayedSkins.isEmpty
+                    ? const Center(child: CircularProgressIndicator())
+                    : _displayedSkins.isEmpty
                         ? const Center(child: Text('No skins found'))
                         : _buildSkinsList(),
               ),
@@ -153,7 +160,6 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
       itemCount: _displayedSkins.length + (_hasMoreData ? 1 : 0),
       itemBuilder: (context, index) {
         if (index >= _displayedSkins.length) {
-          // This is the loading indicator at the bottom
           return const Center(
             child: Padding(
               padding: EdgeInsets.all(AppSpacing.medium),
@@ -431,40 +437,40 @@ class _SkinUnlockerScreenState extends State<SkinUnlockerScreen> {
           downloadProgress.containsKey(skinId) && downloadProgress[skinId]! > 0
               ? null
               : () async {
-                setState(() {
-                  downloadProgress[skinId] = 0.01;
-                });
+                  setState(() {
+                    downloadProgress[skinId] = 0.01;
+                  });
 
-                final fileName = skin['hero'];
-                final fileUrl = skin['config'];
+                  final fileName = skin['hero'];
+                  final fileUrl = skin['config'];
 
-                try {
-                  await DownloadHelper.downloadAndExtractZip(
-                    fileUrl,
-                    '$fileName',
-                    onProgress: (progress) {
-                      if (mounted) {
-                        setState(() {
-                          downloadProgress[skinId] = progress;
-                        });
-                      }
-                    },
-                  );
+                  try {
+                    await DownloadHelper.downloadAndExtractZip(
+                      fileUrl,
+                      '$fileName',
+                      onProgress: (progress) {
+                        if (mounted) {
+                          setState(() {
+                            downloadProgress[skinId] = progress;
+                          });
+                        }
+                      },
+                    );
 
-                  if (mounted) {
-                    setState(() {
-                      downloadProgress[skinId] = 1.0;
-                    });
+                    if (mounted) {
+                      setState(() {
+                        downloadProgress[skinId] = 1.0;
+                      });
+                    }
+                  } catch (e) {
+                    if (mounted) {
+                      _snackBarAction('Download error: $e');
+                      setState(() {
+                        downloadProgress.remove(skinId);
+                      });
+                    }
                   }
-                } catch (e) {
-                  if (mounted) {
-                    _snackBarAction('Download error: $e');
-                    setState(() {
-                      downloadProgress.remove(skinId);
-                    });
-                  }
-                }
-              },
+                },
       style: ElevatedButton.styleFrom(
         backgroundColor: AppColors.accent,
         foregroundColor: Colors.white,
