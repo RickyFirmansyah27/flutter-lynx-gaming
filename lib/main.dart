@@ -6,8 +6,11 @@ import 'package:lynxgaming/screens/onboarding_screen.dart';
 import 'package:lynxgaming/helpers/storage_helper.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
+import 'package:get/get.dart';
+import 'package:lynxgaming/store/auth_store.dart';
 
 void main() {
+  Get.put(AuthStore());
   runApp(const LynxApp());
 }
 
@@ -23,26 +26,26 @@ class LynxApp extends StatelessWidget {
     return false;
   }
 
-  // Fungsi untuk menentukan rute awal berdasarkan izin dan isFirstRun
   Future<String> _getInitialRoute() async {
     final isFirstRun = await StorageHelper.isFirstRun();
     if (!isFirstRun) {
       return '/login';
     }
 
-    // Jika pertama kali, periksa izin
     final isAndroid11OrAbove = await _isAndroid11OrAbove();
-    final hasPermission = await StorageHelper.checkStoragePermission(isAndroid11OrAbove: isAndroid11OrAbove);
+    final hasPermission = await StorageHelper.checkStoragePermission(
+      isAndroid11OrAbove: isAndroid11OrAbove,
+    );
     if (hasPermission) {
-      await StorageHelper.setFirstRunComplete(); // Tandai bahwa onboarding selesai
+      await StorageHelper.setFirstRunComplete();
       return '/login';
     }
-    return '/'; // Ke onboarding jika belum ada izin
+    return '/';
   }
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return GetMaterialApp(
       title: 'Lynx Gaming',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
@@ -67,12 +70,10 @@ class LynxApp extends StatelessWidget {
         useMaterial3: true,
         fontFamily: 'Rajdhani',
       ),
-      // Gunakan FutureBuilder untuk menentukan rute awal secara dinamis
       home: FutureBuilder<String>(
         future: _getInitialRoute(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
-            // Tampilkan loading screen jika masih memeriksa
             return const Scaffold(
               body: Center(child: CircularProgressIndicator()),
             );

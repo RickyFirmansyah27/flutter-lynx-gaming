@@ -1,7 +1,9 @@
+import 'package:get/get.dart';
 import 'package:flutter/material.dart';
 import 'package:lynxgaming/helpers/logger.dart';
 import 'package:lynxgaming/services/auth_service.dart';
 import 'package:lynxgaming/constant/theme.dart';
+import 'package:lynxgaming/store/auth_store.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -20,7 +22,6 @@ class _LoginScreenState extends State<LoginScreen> {
     final gameId = _gameIdController.text.trim();
     final serverId = _serverIdController.text.trim();
     final password = _passwordController.text;
-    final userAuthState = {};
 
     if (gameId.isEmpty || serverId.isEmpty || password.isEmpty) {
       setState(() => error = 'Please fill in all fields');
@@ -41,11 +42,12 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      userAuthState['user'] = response[0]['user'];
-      userAuthState['token'] = response[0]['token'];
+      // Set ke GetX AuthController
+      final authController = Get.find<AuthStore>();
+      authController.setUser(response[0]['user'], response[0]['token']);
 
-      // ignore: use_build_context_synchronously
-      Navigator.pushReplacementNamed(context, '/tabs');
+      // Navigasi
+      Get.offAllNamed('/tabs');
     } catch (e) {
       logger.e('Login error: $e');
       setState(() => error = 'Login failed. Please try again.');

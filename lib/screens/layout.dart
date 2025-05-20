@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:lynxgaming/constant/theme.dart';
+import 'package:get/get.dart';
+import 'package:lynxgaming/store/auth_store.dart';
 
 import 'arena_screen.dart';
 import 'vpn_screen.dart';
@@ -25,7 +27,21 @@ class _TabsScreenState extends State<TabsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final authController = Get.find<AuthStore>();
+    final nickname = authController.user['nickname'] ?? 'Guest';
     return Scaffold(
+       appBar: AppBar(
+        backgroundColor: const Color.fromARGB(255, 9, 9, 23),
+        title: Text(
+          'Welcome, $nickname',
+          style: const TextStyle(
+            fontFamily: 'Orbitron',
+            fontWeight: FontWeight.bold,
+            fontSize: 16,
+            color: Colors.white,
+          ),
+        ),
+      ),
       body: _pages[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
         backgroundColor: AppColors.backgroundDark,
