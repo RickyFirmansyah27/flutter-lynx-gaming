@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:android_intent_plus/android_intent.dart';
 import 'package:android_intent_plus/flag.dart';
+import 'package:lynxgaming/services/arenas_services.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:lynxgaming/helpers/storage_helper.dart';
 import 'package:lynxgaming/helpers/message_helper.dart';
+import 'package:lynxgaming/services/skins_services.dart'; // Import skins_services.dart
 
 class OnboardingScreen extends StatefulWidget {
   const OnboardingScreen({super.key});
@@ -16,50 +18,62 @@ class OnboardingScreen extends StatefulWidget {
 class _OnboardingScreenState extends State<OnboardingScreen> {
   bool _hasAccess = false;
   bool _isAndroid11OrAbove = false;
-
-  final List<Map<String, String>> featuredArenas = [
-    {
-      'id': '1',
-      'name': 'Celestial Palace',
-      'image':
-          'https://i.pinimg.com/736x/ad/8a/07/ad8a07651892ee67933d7c70ca7a0f05.jpg',
-    },
-  ];
-
-  final List<Map<String, String>> featuredSkins = [
-    {
-      'id': '1',
-      'hero': 'Lucas',
-      'description':
-          'A divine skin that transforms Beast into a celestial being with ethereal effects.',
-      'category': 'Mythic',
-      'image':
-          'https://i.pinimg.com/736x/56/e1/9a/56e19adc6d51a6265fc1a62bf32d76fa.jpg',
-    },
-    {
-      'id': '2',
-      'hero': 'Kalea',
-      'description':
-          'A divine skin that transforms Beast into a celestial being with ethereal effects.',
-      'category': 'Mythic',
-      'image':
-          'https://i.pinimg.com/736x/8e/3e/10/8e3e10b10297a6b3d4f4d1516828d9d9.jpg',
-    },
-    {
-      'id': '3',
-      'hero': 'Suyou',
-      'description':
-          'A divine skin that transforms Beast into a celestial being with ethereal effects.',
-      'category': 'Mythic',
-      'image':
-          'https://i.pinimg.com/736x/1e/6f/7a/1e6f7a13b1d21b4b22cfa63a2cc8c436.jpg',
-    },
-  ];
+  bool _isLoading = false;
+  final int _currentPage = 1;
+  final int _pageSize = 5;
+  List<Map<String, String>> featuredSkins = [];
+  List<Map<String, String>> featuredArenas = [];
 
   @override
   void initState() {
     super.initState();
     _checkAccess();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    if (!mounted) return;
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final skins = await getAllSkins(
+        queryParams: {'page': _currentPage, 'size': _pageSize},
+      );
+      final arenas = await getAllArenas(
+        queryParams: {'page': _currentPage, 'size': _pageSize},
+      );
+
+      if (mounted) {
+        setState(() {
+          featuredSkins =
+              skins.map((skin) {
+                return {
+                  'id': skin['id'].toString(),
+                  'name': skin['hero'].toString(),
+                  'image': skin['image_url'].toString(),
+                };
+              }).toList();
+          featuredArenas =
+              arenas.map((skin) {
+                return {
+                  'id': skin['id'].toString(),
+                  'name': skin['nama'].toString(),
+                  'image': skin['image_url'].toString(),
+                };
+              }).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarHelper.showMessage(context, 'Gagal memuat data: $e');
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
   }
 
   Future<void> _checkAccess() async {
@@ -67,13 +81,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final androidInfo = await deviceInfo.androidInfo;
 
     _isAndroid11OrAbove = androidInfo.version.sdkInt >= 30;
-    final hasAccess = await StorageHelper.checkStoragePermission(isAndroid11OrAbove: _isAndroid11OrAbove);
+    final hasAccess = await StorageHelper.checkStoragePermission(
+      isAndroid11OrAbove: _isAndroid11OrAbove,
+    );
     setState(() {
       _hasAccess = hasAccess;
     });
   }
 
-  Future<void> _snackBarAction(message) async {
+  Future<void> _snackBarAction(String message) async {
     if (!mounted) return;
     SnackBarHelper.showMessage(context, message);
   }
@@ -83,13 +99,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
     final androidInfo = await deviceInfo.androidInfo;
 
     if (!_isAndroid11OrAbove) {
-      final hasAccess = await StorageHelper.requestStoragePermission(isAndroid11OrAbove: false);
+      final hasAccess = await StorageHelper.requestStoragePermission(
+        isAndroid11OrAbove: false,
+      );
       setState(() {
         _hasAccess = hasAccess;
       });
       if (!hasAccess) {
         if (!mounted) return;
-        _snackBarAction("Izin ditolak. Mohon aktifkan manual di pengaturan");
+        await _snackBarAction("Izin ditolak. Mohon aktifkan manual di pengaturan");
         await openAppSettings();
       }
     } else {
@@ -107,22 +125,20 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
           );
 
           await intent.launch();
-          _snackBarAction('Silakan aktifkan "Allow access to manage all files"');
+          await _snackBarAction('Silakan aktifkan "Allow access to manage all files"');
           await Future.delayed(const Duration(seconds: 5));
           await _checkAccess();
         }
       } catch (e) {
-        _snackBarAction('Gagal membuka settings: $e');
+        await _snackBarAction('Gagal membuka settings: $e');
         try {
           await openAppSettings();
         } catch (e2) {
-          _snackBarAction('Mohon buka settings dan berikan izin penyimpanan secara manual');
+          await _snackBarAction('Mohon buka settings dan berikan izin penyimpanan secara manual');
         }
       }
     }
   }
-
-
 
   @override
   Widget build(BuildContext context) {
@@ -149,7 +165,6 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
                 child: Container(
                   decoration: BoxDecoration(
-                    // ignore: deprecated_member_use
                     color: Colors.black.withOpacity(0.6),
                     borderRadius: BorderRadius.circular(12),
                   ),
@@ -234,15 +249,17 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                           await _requestStoragePermission();
                         }
 
-                        // Cek ulang setelah permintaan
-                        final latestAccess = await StorageHelper.checkStoragePermission(isAndroid11OrAbove: _isAndroid11OrAbove);
+                        final latestAccess =
+                            await StorageHelper.checkStoragePermission(
+                              isAndroid11OrAbove: _isAndroid11OrAbove,
+                            );
                         if (latestAccess) {
                           if (!mounted) return;
-                           // ignore: use_build_context_synchronously
-                           Navigator.pushReplacementNamed(context, '/login'
-                          );
+                          Navigator.pushReplacementNamed(context, '/login');
                         } else {
-                          _snackBarAction("Akses penyimpanan diperlukan untuk lanjut.");
+                          await _snackBarAction(
+                            "Akses penyimpanan diperlukan untuk lanjut.",
+                          );
                         }
                       },
                       child: const Text('EXPLORE NOW'),
@@ -282,7 +299,11 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                             Image.network(
                               arena['image']!,
                               fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
+                              loadingBuilder: (
+                                context,
+                                child,
+                                loadingProgress,
+                              ) {
                                 if (loadingProgress == null) return child;
                                 return const Center(
                                   child: CircularProgressIndicator(),
@@ -299,8 +320,9 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                               alignment: Alignment.bottomCenter,
                               child: Container(
                                 color: const Color(0xFF1E1E1E),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                ),
                                 width: double.infinity,
                                 child: Text(
                                   arena['name']!,
@@ -333,65 +355,74 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
                 ),
               ),
               const SizedBox(height: 12),
-              SizedBox(
-                height: 200,
-                child: ListView.builder(
-                  scrollDirection: Axis.horizontal,
-                  itemCount: featuredSkins.length,
-                  itemBuilder: (context, index) {
-                    final skin = featuredSkins[index];
-                    return Container(
-                      width: 150,
-                      margin: const EdgeInsets.only(right: 16),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(12),
-                        child: Stack(
-                          fit: StackFit.expand,
-                          children: [
-                            Image.network(
-                              skin['image']!,
-                              fit: BoxFit.cover,
-                              loadingBuilder: (context, child, loadingProgress) {
-                                if (loadingProgress == null) return child;
-                                return const Center(
-                                  child: CircularProgressIndicator(),
-                                );
-                              },
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.asset(
-                                  'assets/placeholder.png',
+              _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : featuredSkins.isEmpty
+                  ? const Center(child: Text('No skins found'))
+                  : SizedBox(
+                    height: 200,
+                    child: ListView.builder(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: featuredSkins.length,
+                      itemBuilder: (context, index) {
+                        final skin = featuredSkins[index];
+                        return Container(
+                          width: 150,
+                          margin: const EdgeInsets.only(right: 16),
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(12),
+                            child: Stack(
+                              fit: StackFit.expand,
+                              children: [
+                                Image.network(
+                                  skin['image']!,
                                   fit: BoxFit.cover,
-                                );
-                              },
-                            ),
-                            Align(
-                              alignment: Alignment.bottomCenter,
-                              child: Container(
-                                color: const Color(0xFF1E1E1E),
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 8),
-                                width: double.infinity,
-                                child: Text(
-                                  skin['hero']!,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontFamily: 'Rajdhani',
-                                    fontSize: 14,
-                                    color: Colors.white,
+                                  loadingBuilder: (
+                                    context,
+                                    child,
+                                    loadingProgress,
+                                  ) {
+                                    if (loadingProgress == null) return child;
+                                    return const Center(
+                                      child: CircularProgressIndicator(),
+                                    );
+                                  },
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Image.asset(
+                                      'assets/placeholder.png',
+                                      fit: BoxFit.cover,
+                                    );
+                                  },
+                                ),
+                                Align(
+                                  alignment: Alignment.bottomCenter,
+                                  child: Container(
+                                    color: const Color(0xFF1E1E1E),
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 8,
+                                    ),
+                                    width: double.infinity,
+                                    child: Text(
+                                      skin['name']!,
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontFamily: 'Rajdhani',
+                                        fontSize: 14,
+                                        color: Colors.white,
+                                      ),
+                                    ),
                                   ),
                                 ),
-                              ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
             ],
           ),
         ),
@@ -401,5 +432,5 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
 }
 
 extension on AndroidDeviceInfo {
-  get packageName => null;
+  String? get packageName => null;
 }

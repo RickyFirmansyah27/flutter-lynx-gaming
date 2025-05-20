@@ -42,11 +42,9 @@ class _LoginScreenState extends State<LoginScreen> {
         return;
       }
 
-      // Set ke GetX AuthController
       final authController = Get.find<AuthStore>();
       authController.setUser(response[0]['user'], response[0]['token']);
 
-      // Navigasi
       Get.offAllNamed('/tabs');
     } catch (e) {
       logger.e('Login error: $e');
