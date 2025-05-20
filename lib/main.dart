@@ -9,14 +9,17 @@ import 'dart:io';
 import 'package:get/get.dart';
 import 'package:lynxgaming/store/auth_store.dart';
 
-void main() {
-  Get.put(AuthStore());
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final authStore = Get.put(AuthStore());
+  await authStore.loadUserData();
+  
   runApp(const LynxApp());
 }
 
 class LynxApp extends StatelessWidget {
   const LynxApp({super.key});
-
+  
   Future<bool> _isAndroid11OrAbove() async {
     if (Platform.isAndroid) {
       final deviceInfo = DeviceInfoPlugin();
@@ -25,24 +28,31 @@ class LynxApp extends StatelessWidget {
     }
     return false;
   }
-
+  
   Future<String> _getInitialRoute() async {
+    final authStore = Get.find<AuthStore>();
+    if (authStore.isLoggedIn) {
+      return '/tabs';
+    }
+    
     final isFirstRun = await StorageHelper.isFirstRun();
     if (!isFirstRun) {
       return '/login';
     }
-
+    
     final isAndroid11OrAbove = await _isAndroid11OrAbove();
     final hasPermission = await StorageHelper.checkStoragePermission(
       isAndroid11OrAbove: isAndroid11OrAbove,
     );
+    
     if (hasPermission) {
       await StorageHelper.setFirstRunComplete();
       return '/login';
     }
+    
     return '/';
   }
-
+  
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
@@ -82,6 +92,8 @@ class LynxApp extends StatelessWidget {
             final initialRoute = snapshot.data!;
             if (initialRoute == '/login') {
               return const LoginScreen();
+            } else if (initialRoute == '/tabs') {
+              return const TabsScreen();
             }
             return const OnboardingScreen();
           }
